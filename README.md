@@ -4,4 +4,4 @@ NOTE: If you want to import functions or files like we do in any project , in Go
 
 An example is written in the `examples` directory and the package `example` is imported in the `cmd/app/main.go` file.
 
-W
+
