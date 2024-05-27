@@ -75,3 +75,11 @@ func GetG2Generator() *bls12381.G2Affine {
 		"4082367875863433681332203403145435568316851327593401208105741076214120093531")
 	return g2Gen
 }
+
+func AggregatePublicKeys(pubkeys []*G2Point) *G2Point {
+	agg := new(bls12381.G2Affine)
+	for _, pubkey := range pubkeys {
+		agg.Add(agg, pubkey.G2Affine)
+	}
+	return &G2Point{agg}
+}
