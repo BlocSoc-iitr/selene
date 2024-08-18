@@ -6,11 +6,6 @@ We really appreciate and value contributions to Selene. Please take time to revi
 
 Before starting development, please [create an issue](https://github.com/BlocSoc-iitr/selene/issues/new/choose) to open the discussion, validate that the PR is wanted, and coordinate overall implementation details.
 
-### Coding style
-
-After a few radical changes in the Cairo language (mainly the transition to Cairo 1), our coding style guidelines became automatically deprecated.
-Feel free to read, contribute, discuss, and ask questions in the issue.
-
 ## Creating Pull Requests (PRs)
 
 As a contributor, you are expected to fork this repository, work on your own fork and then submit pull requests. The pull requests will be reviewed and eventually merged into the main repo. See ["Fork-a-Repo"](https://help.github.com/articles/fork-a-repo/) for how this works.
@@ -20,10 +15,10 @@ As a contributor, you are expected to fork this repository, work on your own for
 1. Make sure your fork is up to date with the main repository:
 
    ```sh
-   cd cairo-contracts
-   git remote add origin https://github.com/OpenZeppelin/cairo-contracts.git
+   cd selene
+   git remote add origin https://github.com/BlocSoc-iitr/selene
    git fetch origin
-   git pull --rebase origin main
+   git pull --rebase origin dev
    ```
 
 2. Branch out from `dev` into `fix/some-bug-short-description-#123` (ex: `fix/typos-in-docs-#123`):
@@ -39,9 +34,9 @@ As a contributor, you are expected to fork this repository, work on your own for
 4. Commit and push to your fork.
 
    ```sh
-   git add src/file.cairo
+   git add src/file.go
    git commit "Fix some bug short description #123"
-   git push origin fix/some-bug-short-description-#123
+   git push origin -u fix/some-bug-short-description-#123
    ```
 
 5. Run tests and linter. This can be done by running local continuous integration and make sure it passes.
