@@ -9,10 +9,10 @@ import (
 // for the test I have used viper, but ant other configuration library can be used. Just the format of the configuration should be the same i.e. map[string]interface{}
 func TestCliConfigAsProvider(t *testing.T) {
 	// used some random values for the test
-    executionRPC := "http://localhost:8545"
-    consensusRPC := "http://localhost:5052"
+    executionRpc := "http://localhost:8545"
+    consensusRpc := "http://localhost:5052"
     checkpoint := []byte{0x01, 0x02, 0x03}
-    rpcBindIP := "127.0.0.1"
+    rpcBindIp := "127.0.0.1"
     rpcPort := uint16(8080)
     dataDir := "/data"
     fallback := "http://fallback.example.com"
@@ -20,11 +20,11 @@ func TestCliConfigAsProvider(t *testing.T) {
     strictCheckpointAge := false
 
     config := CliConfig{
-        ExecutionRPC:         &executionRPC,
-        ConsensusRPC:         &consensusRPC,
+        ExecutionRpc:         &executionRpc,
+        ConsensusRpc:         &consensusRpc,
         Checkpoint:           &checkpoint,
-        RPCBindIP:            &rpcBindIP,
-        RPCPort:              &rpcPort,
+        RpcBindIp:            &rpcBindIp,
+        RpcPort:              &rpcPort,
         DataDir:              &dataDir,
         Fallback:             &fallback,
         LoadExternalFallback: &loadExternalFallback,
@@ -36,17 +36,17 @@ func TestCliConfigAsProvider(t *testing.T) {
         v.Set(key, value)
     }
     // Assertions to check that Viper has the correct values
-    if v.GetString("execution_rpc") != executionRPC {
-        t.Errorf("Expected execution_rpc to be %s, but got %s", executionRPC, v.GetString("execution_rpc"))
+    if v.GetString("execution_rpc") != executionRpc {
+        t.Errorf("Expected execution_rpc to be %s, but got %s", executionRpc, v.GetString("execution_rpc"))
     }
-    if v.GetString("consensus_rpc") != consensusRPC {
-        t.Errorf("Expected consensus_rpc to be %s, but got %s", consensusRPC, v.GetString("consensus_rpc"))
+    if v.GetString("consensus_rpc") != consensusRpc {
+        t.Errorf("Expected consensus_rpc to be %s, but got %s", consensusRpc, v.GetString("consensus_rpc"))
     }
     if v.GetString("checkpoint") != hex.EncodeToString(checkpoint) {
         t.Errorf("Expected checkpoint to be %s, but got %s", hex.EncodeToString(checkpoint), v.GetString("checkpoint"))
     }
-    if v.GetString("rpc_bind_ip") != rpcBindIP {
-        t.Errorf("Expected rpc_bind_ip to be %s, but got %s", rpcBindIP, v.GetString("rpc_bind_ip"))
+    if v.GetString("rpc_bind_ip") != rpcBindIp {
+        t.Errorf("Expected rpc_bind_ip to be %s, but got %s", rpcBindIp, v.GetString("rpc_bind_ip"))
     }
     if v.GetUint16("rpc_port") != rpcPort {
         t.Errorf("Expected rpc_port to be %d, but got %d", rpcPort, v.GetUint16("rpc_port"))
