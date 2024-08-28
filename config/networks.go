@@ -49,13 +49,13 @@ func (n Network) chainID(s string) (uint64, error) {
 		return 0, errors.New("network not recognized")
 	}
 }
-func dataDir(network Network) string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %w", err)
-	}
-	path := filepath.Join(homeDir, fmt.Sprintf("selene/data/%s", strings.ToLower(string(network))))
-	return path
+func dataDir(network Network) (string, error) {
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        return "", fmt.Errorf("failed to get user home directory: %w", err)
+    }
+    path := filepath.Join(homeDir, fmt.Sprintf("selene/data/%s", strings.ToLower(string(network))))
+    return path, nil
 }
 func Mainnet() (BaseConfig, error) {
 	defaultCheckpoint, err := common.Hex_str_to_bytes("c7fc7b2f4b548bfc9305fa80bc1865ddc6eea4557f0a80507af5dc34db7bd9ce")
