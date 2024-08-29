@@ -9,7 +9,7 @@ type BaseConfig struct {
 	RpcBindIp            net.IP      `json:"rpc_bind_ip"`
 	RpcPort              uint16      `json:"rpc_port"`
 	ConsensusRpc         *string     `json:"consensus_rpc"`
-	DefaultCheckpoint    [32]byte    `json:"default_checkpoint"`
+	DefaultCheckpoint    []byte    `json:"default_checkpoint"`		//! Change this back to [32]byte
 	Chain                ChainConfig `json:"chain"`
 	Forks                Forks       `json:"forks"`
 	MaxCheckpointAge     uint64      `json:"max_checkpoint_age"`
@@ -25,7 +25,7 @@ func (b BaseConfig) Default() BaseConfig {
 		RpcBindIp:            LOCALHOST,
 		RpcPort:              0,
 		ConsensusRpc:         nil,
-		DefaultCheckpoint:    [32]byte{},
+		DefaultCheckpoint:    []byte{},			//!
 		Chain:                ChainConfig{},
 		Forks:                Forks{},
 		MaxCheckpointAge:     0,

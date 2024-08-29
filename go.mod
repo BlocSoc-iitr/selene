@@ -17,15 +17,8 @@ require (
 	github.com/crate-crypto/go-kzg-4844 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
-<<<<<<< Updated upstream
-	github.com/ethereum/go-ethereum v1.14.8 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/holiman/uint256 v1.3.1 // indirect
-=======
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
->>>>>>> Stashed changes
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
@@ -36,10 +29,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-<<<<<<< Updated upstream
-	github.com/spf13/viper v1.19.0 // indirect
-=======
->>>>>>> Stashed changes
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
 	github.com/wealdtech/go-merkletree v1.0.0 // indirect

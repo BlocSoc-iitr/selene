@@ -10,7 +10,7 @@ type Config struct {
 	ExecutionRpc         string      `json:"execution_rpc"`
 	RpcBindIp            *net.IP     `json:"rpc_bind_ip"`
 	RpcPort              *uint16     `json:"rpc_port"`
-	DefaultCheckpoint    [32]byte    `json:"default_checkpoint"`
+	DefaultCheckpoint    []byte    `json:"default_checkpoint"`			//!
 	Checkpoint           *[32]byte   `json:"checkpoint"`
 	DataDir              *string     `json:"data_dir"`
 	Chain                ChainConfig `json:"chain"`
