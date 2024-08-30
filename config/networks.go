@@ -69,7 +69,7 @@ func Mainnet() (BaseConfig, error) {
 	consensusRPC := "https://www.lightclientdata.org"
 	dataDir := dataDir(MAINNET)
 	return BaseConfig{
-		DefaultCheckpoint: defaultCheckpoint,
+		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
 		ConsensusRpc:      &consensusRPC,
 		Chain: ChainConfig{
@@ -109,7 +109,7 @@ func Goerli() (BaseConfig, error) {
 	}
 	dataDir := dataDir(GOERLI)
 	return BaseConfig{
-		DefaultCheckpoint: defaultCheckpoint,
+		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
 		ConsensusRpc:      nil,
 		Chain: ChainConfig{
@@ -149,7 +149,7 @@ func Sepolia() (BaseConfig, error) {
 	}
 	dataDir := dataDir(SEPOLIA)
 	return BaseConfig{
-		DefaultCheckpoint: defaultCheckpoint,
+		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
 		ConsensusRpc:      nil,
 		Chain: ChainConfig{
