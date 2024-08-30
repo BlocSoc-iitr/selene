@@ -14,30 +14,48 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// / The location where the list of checkpoint services are stored.
 const CHECKPOINT_SYNC_SERVICES_LIST = "https://raw.githubusercontent.com/ethpandaops/checkpoint-sync-health-checks/master/_data/endpoints.yaml"
 
 type byte256 [32]byte
 
-// networks file will be used (import package config)
 type StartEndTime struct {
+	/// An ISO 8601 formatted UTC timestamp.
 	Start_time string
-	End_time   string
+	/// An ISO 8601 formatted UTC timestamp.
+	End_time string
 }
+
+// /Struct to health check checkpoint sync service
 type Health struct {
+	/// returns true if node is healthy and false otherwise
 	Result bool
-	Date   string
+	/// An ISO 8601 formatted UTC timestamp.
+	Date string
 }
 type CheckpointFallbackService struct {
-	Endpoint             string
-	Name                 string
-	State                bool
-	Verification         bool
-	Contacts             *yaml.MapSlice `yaml:"contacts,omitempty"` // Option type in Go becomes a pointer
-	Notes                *yaml.MapSlice `yaml:"notes,omitempty"`    // Using MapSlice for generic YAML structure
+	/// The endpoint of the service.
+	Endpoint string
+	///The checkpoint sync service name
+	Name string
+	///True if the checkpoint sync service is avalible to send requests
+	State bool
+	///True if the checkpoint sync service is verified
+	Verification bool
+	///The contacts of the checkpoint sync service maintainers
+	Contacts *yaml.MapSlice `yaml:"contacts,omitempty"` // Option type in Go becomes a pointer
+	///service notes
+	Notes *yaml.MapSlice `yaml:"notes,omitempty"` // Using MapSlice for generic YAML structure
+	///Health check of the checkpoint sync service
 	Health_from_fallback *Health
 }
+
+// / The CheckpointFallback manages checkpoint fallback services.
 type CheckpointFallback struct {
+	///services map
 	Services map[config.Network][]CheckpointFallbackService
+	///networks list
+	///available network - [SEPOLIA, MAINNET, GOERLI]
 	Networks []config.Network
 }
 type RawSlotResponse struct {
@@ -123,6 +141,10 @@ func (ch CheckpointFallback) new() CheckpointFallback {
 }
 
 // build the CheckpointFallback object from the fetch data from get request
+
+// / Build the checkpoint fallback service from the community-maintained list by [ethPandaOps](https://github.com/ethpandaops).
+// /
+// / The list is defined in [ethPandaOps/checkpoint-fallback-service](https://github.com/ethpandaops/checkpoint-sync-health-checks/blob/master/_data/endpoints.yaml).
 func (ch CheckpointFallback) build() (CheckpointFallback, error) {
 	resp, err := http.Get(CHECKPOINT_SYNC_SERVICES_LIST)
 	if err != nil {
