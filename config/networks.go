@@ -67,7 +67,10 @@ func Mainnet() (BaseConfig, error) {
 		return BaseConfig{}, fmt.Errorf("failed to parse genesis root: %w", err)
 	}
 	consensusRPC := "https://www.lightclientdata.org"
-	dataDir := dataDir(MAINNET)
+	dataDir, err := dataDir(MAINNET)
+	if err != nil {
+		return BaseConfig{}, fmt.Errorf("failed to get data directory: %w", err)
+	}
 	return BaseConfig{
 		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
@@ -95,7 +98,7 @@ func Mainnet() (BaseConfig, error) {
 				ForkVersion: []byte{0x04, 0x00, 0x00, 0x00}},
 		},
 		MaxCheckpointAge: 1_209_600, // 14 days
-		DataDir:        dataDir,
+		DataDir:        &dataDir,
 	}, nil
 }
 func Goerli() (BaseConfig, error) {
@@ -107,7 +110,10 @@ func Goerli() (BaseConfig, error) {
 	if err != nil {
 		return BaseConfig{}, fmt.Errorf("failed to parse genesis root: %w", err)
 	}
-	dataDir := dataDir(GOERLI)
+	dataDir, err := dataDir(GOERLI)
+	if err != nil {
+		return BaseConfig{}, fmt.Errorf("failed to get data directory: %w", err)
+	}
 	return BaseConfig{
 		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
@@ -135,7 +141,7 @@ func Goerli() (BaseConfig, error) {
 				ForkVersion: []byte{0x04, 0x10, 0x20, 0x00}},
 		},
 		MaxCheckpointAge: 1_209_600, // 14 days
-		DataDir:          dataDir,
+		DataDir:          &dataDir,
 	}, nil
 }
 func Sepolia() (BaseConfig, error) {
@@ -147,7 +153,10 @@ func Sepolia() (BaseConfig, error) {
 	if err != nil {
 		return BaseConfig{}, fmt.Errorf("failed to parse genesis root: %w", err)
 	}
-	dataDir := dataDir(SEPOLIA)
+	dataDir, err := dataDir(SEPOLIA)
+	if err != nil {
+		return BaseConfig{}, fmt.Errorf("failed to get data directory: %w", err)
+	}
 	return BaseConfig{
 		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
@@ -175,6 +184,6 @@ func Sepolia() (BaseConfig, error) {
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x73}},
 		},
 		MaxCheckpointAge: 1_209_600, // 14 days
-		DataDir:          dataDir,
+		DataDir:          &dataDir,
 	}, nil
 }
