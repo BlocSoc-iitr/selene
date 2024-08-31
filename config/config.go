@@ -36,7 +36,6 @@ func (c Config) from_file(configPath *string, network *string, cliConfig *CliCon
 		fmt.Printf("Error in reading config file: %v", err)
 	}
 	tomlProvider := v.AllSettings() // returns the config as a map[string]any
-	// cliProvider := cliConfig.as_provider()
 	finalConfig := Config{
 		ConsensusRpc:         *baseConfig.ConsensusRpc,
 		RpcBindIp:            &baseConfig.RpcBindIp,
@@ -140,7 +139,3 @@ func (c Config) to_base_config() BaseConfig {
 		StrictCheckpointAge:  c.StrictCheckpointAge,
 	}
 }
-// func (c Config) fork_version(slot uint64) []uint8 {
-// Importing this from consensus_core package. This function is written in consensus_core.go
-// Calculate_fork_version(c.Forks, slot)
-// }
