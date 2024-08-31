@@ -43,7 +43,7 @@ func Deserialize(data []byte) (*BeaconBlockBody, error) {
 }
 
 
-func (b *BeaconBlockBody) def() {
+func (b *BeaconBlockBody) Def() {
 	b.RandaoReveal = SignatureBytes{}
 	b.Eth1Data = Eth1Data{}
 	b.Graffiti = Bytes32{}
@@ -89,7 +89,7 @@ type ExecutionPayload struct {
 	ExcessBlobGas   uint64        `json:"excess_blob_gas"` // Deneb variant only
 }   // 1 method
 
-func (exe *ExecutionPayload) def() {
+func (exe *ExecutionPayload) Def() {
 	exe.ParentHash = Bytes32{}
 	exe.FeeRecipient = Address{}
 	exe.StateRoot = Bytes32{}
@@ -130,12 +130,12 @@ type Withdrawal struct{
 	ValidatorIndex uint64
 }
 type ProposalSlashing struct {
-	signed_header_1 SignedBeaconBlockHeader
-	signed_header_2 SignedBeaconBlockHeader
+	SignedHeader1 SignedBeaconBlockHeader
+	SignedHeader2 SignedBeaconBlockHeader
 }
 type SignedBeaconBlockHeader struct {
-	message   BeaconBlockHeader
-	signature SignatureBytes
+	Message   BeaconBlockHeader
+	Signature SignatureBytes
 }
 type AttesterSlashing struct{
 	Attestation1 IndexedAttestation
@@ -248,7 +248,7 @@ type GenericUpdate struct{
 	FinalityBranch []Bytes32
 }
 
-func (g GenericUpdate) from() {
+func (g GenericUpdate) From() {
 	g.AttestedHeader = Header{}
 	g.SyncAggregate = SyncAggregate{}
 	g.SignatureSlot = 0
