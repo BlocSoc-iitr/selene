@@ -1,3 +1,6 @@
+![build](https://github.com/BlocSoc-iitr/selene/actions/workflows/go.yml/badge.svg)
+![tests](https://github.com/BlocSoc-iitr/selene/actions/workflows/test.yml/badge.svg)
+![linter](https://github.com/BlocSoc-iitr/selene/actions/workflows/cilint.yml/badge.svg)
 
 
 # experiment
