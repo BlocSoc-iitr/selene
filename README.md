@@ -1,6 +1,10 @@
+![build](https://github.com/Block-FL/BlockFL/actions/workflows/npm-grunt.yml/badge.svg)
+
+
 # experiment
 
 NOTE: The functions need not have correct parameters and return data types yet
+
 
 ## Suggestions
 
