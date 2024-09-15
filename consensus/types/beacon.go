@@ -1,8 +1,6 @@
 package types
 
-import (
-	"encoding/json"
-)
+// Serialization and Deserialization for ExecutionPayload and BeaconBlockBody can be done by importing from prewritten functions in utils wherever needed.
 
 type BeaconBlock struct {
 	Slot          uint64
@@ -27,20 +25,6 @@ type BeaconBlockBody struct {
 	BlsToExecutionChanges [16]SignedBlsToExecutionChange `json:"bls_to_execution_changes"` // max length 16 to be ensured
 	BlobKzgCommitments    [4096][48]byte                 `json:"blob_kzg_commitments"`     // max length 4096 to be ensured
 } // 1 method
-
-// Serialize the BeaconBlockBody to JSON
-func (body *BeaconBlockBody) Serialize() ([]byte, error) {
-	return json.Marshal(body)
-}
-
-// Deserialize JSON into the BeaconBlockBody
-func Deserialize(data []byte) (*BeaconBlockBody, error) {
-	var exe BeaconBlockBody
-	if err := json.Unmarshal(data, &exe); err != nil {
-		return nil, err
-	}
-	return &exe, nil
-}
 
 func (b *BeaconBlockBody) Def() {
 	b.RandaoReveal = SignatureBytes{}
@@ -106,19 +90,7 @@ func (exe *ExecutionPayload) Def() {
 	exe.ExcessBlobGas = 0                 // Only for Deneb
 } // default
 
-// Serialize the Deneb variant to JSON
-func (exe *ExecutionPayload) SerializeExecutionPayLoad() ([]byte, error) {
-	return json.Marshal(exe)
-}
 
-// Deserialize JSON into the Deneb variant
-func DeserializeExecutionPayload(data []byte) (*ExecutionPayload, error) {
-	var exe ExecutionPayload
-	if err := json.Unmarshal(data, &exe); err != nil {
-		return nil, err
-	}
-	return &exe, nil
-}
 
 type Withdrawal struct {
 	Index          uint64
