@@ -25,7 +25,7 @@ type EIP1186AccountProofResponse struct {
 	CodeHash    [32]byte
 }
 
-func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, error) {
+func verifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, error) {
 	expectedHash := root
 	pathOffset := 0
 
@@ -173,7 +173,7 @@ func keccak256(data []byte) []byte {
 	return hash.Sum(nil)
 }
 
-func EncodeAccount(proof *EIP1186AccountProofResponse) ([]byte, error) {
+func encodeAccount(proof *EIP1186AccountProofResponse) ([]byte, error) {
 	account := Account{
 		Nonce:       proof.Nonce,
 		Balance:     proof.Balance,
