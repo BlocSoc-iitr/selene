@@ -37,16 +37,29 @@ func (n Network) baseConfig(s string) (BaseConfig, error) {
 		return BaseConfig{}, errors.New("network not recognized")
 	}
 }
-func (n Network) chainID(s string) (uint64, error) {
-	switch strings.ToUpper(s) {
-	case "MAINNET":
-		return 1, nil
-	case "GOERLI":
-		return 5, nil
-	case "SEPOLIA":
-		return 11155111, nil
+func (n Network) chainID (id uint64) (BaseConfig, error) {
+	switch id {
+	case 1:
+		config, err := Mainnet()
+		if err != nil {
+			return BaseConfig{}, err
+		}
+		return config, nil
+	case 5:
+		config, err := Goerli()
+		if err != nil {
+			return BaseConfig{}, err
+		}
+		return config, nil
+	case 11155111:
+		
+		config, err := Sepolia()
+		if err != nil {
+			return BaseConfig{}, err
+		}
+		return config, nil
 	default:
-		return 0, errors.New("network not recognized")
+		return BaseConfig{}, errors.New("ChainID not recognized")
 	}
 }
 func dataDir(network Network) (string, error) {
@@ -67,9 +80,12 @@ func Mainnet() (BaseConfig, error) {
 		return BaseConfig{}, fmt.Errorf("failed to parse genesis root: %w", err)
 	}
 	consensusRPC := "https://www.lightclientdata.org"
-	dataDir := dataDir(MAINNET)
+	dataDir, err := dataDir(MAINNET)
+	if err != nil {
+		return BaseConfig{}, fmt.Errorf("failed to get data directory: %w", err)
+	}
 	return BaseConfig{
-		DefaultCheckpoint: defaultCheckpoint,
+		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
 		ConsensusRpc:      &consensusRPC,
 		Chain: ChainConfig{
@@ -95,7 +111,7 @@ func Mainnet() (BaseConfig, error) {
 				ForkVersion: []byte{0x04, 0x00, 0x00, 0x00}},
 		},
 		MaxCheckpointAge: 1_209_600, // 14 days
-		DataDir:        dataDir,
+		DataDir:        &dataDir,
 	}, nil
 }
 func Goerli() (BaseConfig, error) {
@@ -107,9 +123,12 @@ func Goerli() (BaseConfig, error) {
 	if err != nil {
 		return BaseConfig{}, fmt.Errorf("failed to parse genesis root: %w", err)
 	}
-	dataDir := dataDir(GOERLI)
+	dataDir, err := dataDir(GOERLI)
+	if err != nil {
+		return BaseConfig{}, fmt.Errorf("failed to get data directory: %w", err)
+	}
 	return BaseConfig{
-		DefaultCheckpoint: defaultCheckpoint,
+		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
 		ConsensusRpc:      nil,
 		Chain: ChainConfig{
@@ -135,7 +154,7 @@ func Goerli() (BaseConfig, error) {
 				ForkVersion: []byte{0x04, 0x10, 0x20, 0x00}},
 		},
 		MaxCheckpointAge: 1_209_600, // 14 days
-		DataDir:          dataDir,
+		DataDir:          &dataDir,
 	}, nil
 }
 func Sepolia() (BaseConfig, error) {
@@ -147,9 +166,12 @@ func Sepolia() (BaseConfig, error) {
 	if err != nil {
 		return BaseConfig{}, fmt.Errorf("failed to parse genesis root: %w", err)
 	}
-	dataDir := dataDir(SEPOLIA)
+	dataDir, err := dataDir(SEPOLIA)
+	if err != nil {
+		return BaseConfig{}, fmt.Errorf("failed to get data directory: %w", err)
+	}
 	return BaseConfig{
-		DefaultCheckpoint: defaultCheckpoint,
+		DefaultCheckpoint: [32]byte(defaultCheckpoint),
 		RpcPort:           8545,
 		ConsensusRpc:      nil,
 		Chain: ChainConfig{
@@ -175,6 +197,6 @@ func Sepolia() (BaseConfig, error) {
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x73}},
 		},
 		MaxCheckpointAge: 1_209_600, // 14 days
-		DataDir:          dataDir,
+		DataDir:          &dataDir,
 	}, nil
 }
