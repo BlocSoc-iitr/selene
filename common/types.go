@@ -15,31 +15,31 @@ import (
 // address:  20 bytes
 // B256: 32 bytes  https://bluealloy.github.io/revm/docs/revm/precompile/primitives/type.B256.html
 type Address struct {
-	addr [20]byte
+	Addr [20]byte
 }
 
 type Block struct {
-	number            uint64
-	base_fee_per_gas  uint256.Int
-	difficulty        uint256.Int
-	extra_data        []byte
-	gas_limit         uint64
-	gas_used          uint64
-	hash              [32]byte
-	logs_bloom        []byte
-	miner             Address
-	mix_hash          [32]byte
-	nonce             string
-	parent_hash       [32]byte
-	receipts_root     [32]byte
-	sha3_uncles       [32]byte
-	size              uint64
-	state_root        [32]byte
-	timestamp         uint64
-	total_difficulty  uint64
-	transactions      Transactions
-	transactions_root [32]byte
-	uncles            [][32]byte
+	Number           uint64
+	BaseFeePerGas    uint256.Int
+	Difficulty       uint256.Int
+	ExtraData        []byte
+	GasLimit         uint64
+	GasUsed          uint64
+	Hash             [32]byte
+	LogsBloom        []byte
+	Miner            Address
+	MixHash          [32]byte
+	Nonce            string
+	ParentHash       [32]byte
+	ReceiptsRoot     [32]byte
+	Sha3Uncles       [32]byte
+	Size             uint64
+	StateRoot        [32]byte
+	Timestamp        uint64
+	TotalDifficulty  uint64
+	Transactions     Transactions
+	TransactionsRoot [32]byte
+	Uncles           [][32]byte
 }
 
 // an enum having 2 types- how to implement??
@@ -53,13 +53,13 @@ func Default() *Transactions {
 		Full: []types.Transaction{},
 	}
 }
-func (t *Transactions) hashes() [][32]byte {
+func (t *Transactions) HashesFunc() [][32]byte {
 	if len(t.Hashes) > 0 { //if Transactions struct contains hashes then return them directly
 		return t.Hashes
 	}
 	hashes := make([][32]byte, len(t.Full))
-	for i, tx := range t.Full {
-		hashes[i] = tx.Hash()
+	for i := range t.Full {
+		hashes[i] = t.Full[i].Hash()
 	}
 	return hashes
 }
