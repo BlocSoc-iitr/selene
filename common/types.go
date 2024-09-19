@@ -53,13 +53,13 @@ func Default() *Transactions {
 		Full: []types.Transaction{},
 	}
 }
-func (t *Transactions) hashes() [][32]byte {
+func (t *Transactions) HashesFunc() [][32]byte {
 	if len(t.Hashes) > 0 { //if Transactions struct contains hashes then return them directly
 		return t.Hashes
 	}
 	hashes := make([][32]byte, len(t.Full))
-	for i, tx := range t.Full {
-		hashes[i] = tx.Hash()
+	for i := range t.Full {
+		hashes[i] = t.Full[i].Hash()
 	}
 	return hashes
 }
