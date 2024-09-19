@@ -37,16 +37,29 @@ func (n Network) baseConfig(s string) (BaseConfig, error) {
 		return BaseConfig{}, errors.New("network not recognized")
 	}
 }
-func (n Network) chainID(s string) (uint64, error) {
-	switch strings.ToUpper(s) {
-	case "MAINNET":
-		return 1, nil
-	case "GOERLI":
-		return 5, nil
-	case "SEPOLIA":
-		return 11155111, nil
+func (n Network) chainID (id uint64) (BaseConfig, error) {
+	switch id {
+	case 1:
+		config, err := Mainnet()
+		if err != nil {
+			return BaseConfig{}, err
+		}
+		return config, nil
+	case 5:
+		config, err := Goerli()
+		if err != nil {
+			return BaseConfig{}, err
+		}
+		return config, nil
+	case 11155111:
+		
+		config, err := Sepolia()
+		if err != nil {
+			return BaseConfig{}, err
+		}
+		return config, nil
 	default:
-		return 0, errors.New("network not recognized")
+		return BaseConfig{}, errors.New("ChainID not recognized")
 	}
 }
 func dataDir(network Network) (string, error) {
