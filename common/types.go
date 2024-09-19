@@ -4,9 +4,9 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
-	"strconv"
 )
 
 // need to confirm how such primitive types will be imported,
