@@ -125,7 +125,7 @@ func isProofValid(
 	}
 
 	// Compare the final derived root with the attested header's state root
-	return bytes.Equal(derivedRoot[:], attestedHeader.State_root[:])
+	return bytes.Equal(derivedRoot[:], attestedHeader.StateRoot[:])
 }
 
 func CalculateForkVersion(forks *Forks, slot uint64) [4]byte {
@@ -159,7 +159,7 @@ func ComputeForkDataRoot(currentVersion [4]byte, genesisValidatorRoot consensus_
 }
 
 // GetParticipatingKeys retrieves the participating public keys from the committee based on the bitfield represented as a byte array.
-func GetParticipatingKeys(committee *consensus_core.SyncComittee, bitfield [64]byte) ([]consensus_core.BLSPubKey, error) {
+func GetParticipatingKeys(committee *consensus_core.SyncCommittee, bitfield [64]byte) ([]consensus_core.BLSPubKey, error) {
 	var pks []consensus_core.BLSPubKey
 	numBits := len(bitfield) * 8 // Total number of bits
 
