@@ -46,7 +46,7 @@ type AttesterSlashing struct {
 }
 
 type IndexedAttestation struct {
-	AttestingIndices []uint64 //max length 2048 to be ensured
+	AttestingIndices [2048]uint64
 	Data             AttestationData
 	Signature        SignatureBytes
 }
@@ -106,7 +106,7 @@ type Withdrawal struct {
 	Amount         uint64
 }
 
-type ExecutionPayload struct { //not implemented
+type ExecutionPayload struct {
 	ParentHash    Bytes32
 	FeeRecipient  Address
 	StateRoot     Bytes32
@@ -120,10 +120,10 @@ type ExecutionPayload struct { //not implemented
 	ExtraData     [32]byte
 	BaseFeePerGas uint64
 	BlockHash     Bytes32
-	Transactions  types.Transaction
-	Withdrawals   types.Withdrawal
-	BlobGasUsed   uint64
-	ExcessBlobGas uint64
+	Transactions  []types.Transaction `ssz-max:"1048576"`
+	Withdrawals   []types.Withdrawal  `ssz-max:"16"`
+	BlobGasUsed   *uint64             // Deneb-specific field, use pointer for optionality
+	ExcessBlobGas *uint64             // Deneb-specific field, use pointer for optionality
 }
 
 type SignedBlsToExecutionChange struct {
@@ -136,19 +136,19 @@ type BlsToExecutionChange struct {
 	FromBlsPubkey  [48]byte
 }
 
-type BeaconBlockBody struct { //not implemented
+// BeaconBlockBody represents the body of a beacon block.
+type BeaconBlockBody struct {
 	RandaoReveal          SignatureBytes
 	Eth1Data              Eth1Data
 	Graffiti              Bytes32
-	ProposerSlashings     []ProposerSlashing //max length 16 to be insured how?
-	AttesterSlashings     []AttesterSlashing //max length 2 to be ensured
-	Attestations          []Attestation      //max length 128 to be ensured
-	Deposits              []Deposit          //max length 16 to be ensured
-	VoluntaryExits        SignedVoluntaryExit
+	ProposerSlashings     []ProposerSlashing    `ssz-max:"16"`
+	AttesterSlashings     []AttesterSlashing    `ssz-max:"2"`
+	Attestations          []Attestation         `ssz-max:"128"`
+	Deposits              []Deposit             `ssz-max:"16"`
+	VoluntaryExits        []SignedVoluntaryExit `ssz-max:"16"`
 	SyncAggregate         SyncAggregate
-	ExecutionPayload      ExecutionPayload
-	BlsToExecutionChanges []SignedBlsToExecutionChange //max length 16 to be ensured
-	BlobKzgCommitments    [][48]byte                   //max length 4096 to be ensured
+	BlsToExecutionChanges []SignedBlsToExecutionChange `ssz-max:"16"`
+	BlobKzgCommitments    [][48]byte                   `ssz-max:"4096"`
 }
 
 type Header struct {
