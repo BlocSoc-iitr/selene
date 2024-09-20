@@ -3,12 +3,14 @@
 // LightClientStore,genericUpdate
 package consensus_core
 
+import "github.com/BlocSoc-iitr/selene/consensus/types"
+
 type BeaconBlock struct {
 	slot           uint64
 	proposer_index uint64
 	parent_root    [32]byte
 	state_root     [32]byte
-	body           BeaconBlockBody
+	Body           BeaconBlockBody
 }
 type Bytes32 [32]byte
 type BLSPubKey [48]byte
@@ -31,7 +33,7 @@ type SignedBeaconBlockHeader struct {
 type BeaconBlockHeader struct {
 	slot           uint64
 	proposer_index uint64
-	parent_root    Bytes32
+	Parent_root    Bytes32
 	state_root     Bytes32
 	body_root      Bytes32
 }
@@ -80,8 +82,8 @@ type VoluntaryExit struct {
 	validator_index uint64
 }
 type SyncAggregate struct {
-	sync_committee_bits      [64]byte
-	sync_committee_signature SignatureBytes
+	Sync_committee_bits      [64]byte
+	Sync_committee_signature SignatureBytes
 }
 type Withdrawal struct {
 	index           uint64
@@ -90,21 +92,21 @@ type Withdrawal struct {
 	amount          uint64
 }
 type ExecutionPayload struct { //not implemented
-	parent_hash      Bytes32
-	fee_recipient    Address
-	state_root       Bytes32
-	receipts_root    Bytes32
-	logs_bloom       LogsBloom
-	prev_randao      Bytes32
-	block_number     uint64
-	gas_limit        uint64
-	gas_used         uint64
-	timestamp        uint64
-	extra_data       [32]byte
-	base_fee_per_gas uint64
-	block_hash       Bytes32
-	transactions     []byte       //max length 1073741824 to be implemented
-	withdrawals      []Withdrawal //max length 16 to be implemented
+	Parent_hash      Bytes32
+	Fee_recipient    Address
+	State_root       Bytes32
+	Receipts_root    Bytes32
+	Logs_bloom       LogsBloom
+	Prev_randao      Bytes32
+	Block_number     uint64
+	Gas_limit        uint64
+	Gas_used         uint64
+	Timestamp        uint64
+	Extra_data       [32]byte
+	Base_fee_per_gas uint64
+	Block_hash       Bytes32
+	Transactions     types.Transaction
+	withdrawals      types.Withdrawal
 	blob_gas_used    uint64
 	excess_blob_gas  uint64
 }
@@ -126,44 +128,44 @@ type BeaconBlockBody struct { //not implemented
 	deposits                 []Deposit          //max length 16 to be ensured
 	voluntary_exits          SignedVoluntaryExit
 	sync_aggregate           SyncAggregate
-	execution_payload        ExecutionPayload
+	Execution_payload        ExecutionPayload
 	bls_to_execution_changes []SignedBlsToExecutionChange //max length 16 to be ensured
 	blob_kzg_commitments     [][48]byte                   //max length 4096 to be ensured
 }
 type Header struct {
-	slot           uint64
-	proposer_index uint64
-	parent_root    Bytes32
-	state_root     Bytes32
-	body_root      Bytes32
+	Slot           uint64
+	Proposer_index uint64
+	Parent_root    Bytes32
+	State_root     Bytes32
+	Body_root      Bytes32
 }
 type SyncComittee struct {
-	pubkeys          [512]BLSPubKey
-	aggregate_pubkey BLSPubKey
+	Pubkeys          [512]BLSPubKey
+	Aggregate_pubkey BLSPubKey
 }
 type Update struct {
-	attested_header            Header
-	next_sync_committee        SyncComittee
-	next_sync_committee_branch []Bytes32
-	finalized_header           Header
-	finality_branch            []Bytes32
-	sync_aggregate             SyncAggregate
-	signature_slot             uint64
+	AttestedHeader         Header
+	NextSyncCommitee       SyncComittee
+	NextSyncCommiteeBranch []Bytes32
+	FinalizedHeader        Header
+	FinalityBranch         []Bytes32
+	SyncAggregate          SyncAggregate
+	SignatureSlot          uint64
 }
 type FinalityUpdate struct {
-	attested_header  Header
-	finalized_header Header
-	finality_branch  []Bytes32
-	sync_aggregate   SyncAggregate
-	signature_slot   uint64
+	AttestedHeader  Header
+	FinalizedHeader Header
+	FinalityBranch  []Bytes32
+	SyncAggregate   SyncAggregate
+	SignatureSlot   uint64
 }
 type OptimisticUpdate struct {
-	attested_header Header
-	sync_aggregate  SyncAggregate
-	signature_slot  uint64
+	AttestedHeader Header
+	SyncAggregate  SyncAggregate
+	SignatureSlot  uint64
 }
 type Bootstrap struct {
-	header                        Header
-	current_sync_committee        SyncComittee
-	current_sync_committee_branch []Bytes32
+	Header                     Header
+	CurrentSyncCommittee       SyncComittee
+	CurrentSyncCommitteeBranch []Bytes32
 }
