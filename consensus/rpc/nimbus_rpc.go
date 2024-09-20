@@ -3,11 +3,12 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 )
 
 // uses types package
@@ -43,15 +44,17 @@ func min(a uint8, b uint8) uint8 {
 	}
 	return b
 }
+
 type NimbusRpc struct {
 	//ConsensusRpc
 	rpc string
 }
+
 func NewNimbusRpc(rpc string) *NimbusRpc {
 	return &NimbusRpc{
 		rpc: rpc}
 }
-func (n *NimbusRpc) GetBootstrap(block_root []byte) (consensus_core.Bootstrap, error) {
+func (n *NimbusRpc) GetBootstrap(block_root [32]byte) (consensus_core.Bootstrap, error) {
 	root_hex := fmt.Sprintf("%x", block_root)
 	req := fmt.Sprintf("%s/eth/v1/beacon/light_client/bootstrap/0x%s", n.rpc, root_hex)
 	var res BootstrapResponse
@@ -93,14 +96,15 @@ func (n *NimbusRpc) GetOptimisticUpdate() (consensus_core.OptimisticUpdate, erro
 	}
 	return res.data, nil
 }
-func (n *NimbusRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock, error) {
+func (n *NimbusRpc) GetBlock(slot uint64) (*consensus_core.BeaconBlock, error) {
 	req := fmt.Sprintf("%s/eth/v2/beacon/blocks/%s", n.rpc, strconv.FormatUint(slot, 10))
 	var res BeaconBlockResponse
 	err := get(req, &res)
 	if err != nil {
-		return consensus_core.BeaconBlock{}, fmt.Errorf("block error: %w", err)
+		return nil, fmt.Errorf("block error: %w", err)
 	}
-	return res.data.message, nil
+
+	return &res.data.message, nil
 }
 func (n *NimbusRpc) ChainId() (uint64, error) {
 	req := fmt.Sprintf("%s/eth/v1/config/spec", n.rpc)
@@ -111,6 +115,7 @@ func (n *NimbusRpc) ChainId() (uint64, error) {
 	}
 	return res.data.chain_id, nil
 }
+
 // BeaconBlock, Update,FinalityUpdate ,OptimisticUpdate,Bootstrap yet to be defined in consensus-core/src/types/mod.go
 // For now defined in consensus/consensus_core.go
 type BeaconBlockResponse struct {
@@ -138,4 +143,3 @@ type Spec struct {
 type BootstrapResponse struct {
 	data consensus_core.Bootstrap
 }
-
