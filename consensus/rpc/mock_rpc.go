@@ -29,7 +29,7 @@ func (m *MockRpc) GetBootstrap(block_root []byte) (*consensus_core.Bootstrap, er
 	if err != nil {
 		return &consensus_core.Bootstrap{}, fmt.Errorf("bootstrap error: %w", err)
 	}
-	return &bootstrap.data, nil
+	return &bootstrap.Data, nil
 }
 func (m *MockRpc) GetUpdates(period uint64, count uint8) ([]consensus_core.Update, error) {
 	path := filepath.Join(m.testdata, "updates.json")
@@ -44,7 +44,7 @@ func (m *MockRpc) GetUpdates(period uint64, count uint8) ([]consensus_core.Updat
 	}
 	updates := make([]consensus_core.Update, len(updatesResponse))
 	for i, update := range updatesResponse {
-		updates[i] = update.data
+		updates[i] = update.Data
 	}
 	return updates, nil
 }
@@ -59,7 +59,7 @@ func (m *MockRpc) GetFinalityUpdate() (*consensus_core.FinalityUpdate, error) {
 	if err != nil {
 		return &consensus_core.FinalityUpdate{}, fmt.Errorf("finality update error: %w", err)
 	}
-	return &finality.data, nil
+	return &finality.Data, nil
 }
 func (m *MockRpc) GetOptimisticUpdate() (*consensus_core.OptimisticUpdate, error) {
 	path := filepath.Join(m.testdata, "optimistic.json")
@@ -72,7 +72,7 @@ func (m *MockRpc) GetOptimisticUpdate() (*consensus_core.OptimisticUpdate, error
 	if err != nil {
 		return &consensus_core.OptimisticUpdate{}, fmt.Errorf("optimistic update error: %w", err)
 	}
-	return &optimistic.data, nil
+	return &optimistic.Data, nil
 }
 func (m *MockRpc) GetBlock(slot uint64) (*consensus_core.BeaconBlock, error) {
 	path := filepath.Join(m.testdata, fmt.Sprintf("blocks/%d.json", slot))
@@ -85,7 +85,7 @@ func (m *MockRpc) GetBlock(slot uint64) (*consensus_core.BeaconBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &block.data.message, nil
+	return &block.Data.Message, nil
 }
 func (m *MockRpc) ChainId() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")

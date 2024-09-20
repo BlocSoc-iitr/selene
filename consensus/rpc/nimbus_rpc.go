@@ -59,7 +59,7 @@ func (n *NimbusRpc) GetBootstrap(block_root []byte) (consensus_core.Bootstrap, e
 	if err != nil {
 		return consensus_core.Bootstrap{}, fmt.Errorf("bootstrap error: %w", err)
 	}
-	return res.data, nil
+	return res.Data, nil
 }
 func (n *NimbusRpc) GetUpdates(period uint64, count uint8) ([]consensus_core.Update, error) {
 	count = min(count, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
@@ -71,7 +71,7 @@ func (n *NimbusRpc) GetUpdates(period uint64, count uint8) ([]consensus_core.Upd
 	}
 	updates := make([]consensus_core.Update, len(res))
 	for i, update := range res {
-		updates[i] = update.data
+		updates[i] = update.Data
 	}
 	return updates, nil
 }
@@ -82,7 +82,7 @@ func (n *NimbusRpc) GetFinalityUpdate() (consensus_core.FinalityUpdate, error) {
 	if err != nil {
 		return consensus_core.FinalityUpdate{}, fmt.Errorf("finality update error: %w", err)
 	}
-	return res.data, nil
+	return res.Data, nil
 }
 func (n *NimbusRpc) GetOptimisticUpdate() (consensus_core.OptimisticUpdate, error) {
 	req := fmt.Sprintf("%s/eth/v1/beacon/light_client/optimistic_update", n.rpc)
@@ -91,7 +91,7 @@ func (n *NimbusRpc) GetOptimisticUpdate() (consensus_core.OptimisticUpdate, erro
 	if err != nil {
 		return consensus_core.OptimisticUpdate{}, fmt.Errorf("finality update error: %w", err)
 	}
-	return res.data, nil
+	return res.Data, nil
 }
 func (n *NimbusRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock, error) {
 	req := fmt.Sprintf("%s/eth/v2/beacon/blocks/%s", n.rpc, strconv.FormatUint(slot, 10))
@@ -100,7 +100,7 @@ func (n *NimbusRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock, error) {
 	if err != nil {
 		return consensus_core.BeaconBlock{}, fmt.Errorf("block error: %w", err)
 	}
-	return res.data.message, nil
+	return res.Data.Message, nil
 }
 func (n *NimbusRpc) ChainId() (uint64, error) {
 	req := fmt.Sprintf("%s/eth/v1/config/spec", n.rpc)
@@ -109,33 +109,33 @@ func (n *NimbusRpc) ChainId() (uint64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("spec error: %w", err)
 	}
-	return res.data.chain_id, nil
+	return res.Data.ChainId, nil
 }
 // BeaconBlock, Update,FinalityUpdate ,OptimisticUpdate,Bootstrap yet to be defined in consensus-core/src/types/mod.go
 // For now defined in consensus/consensus_core.go
 type BeaconBlockResponse struct {
-	data BeaconBlockData
+	Data BeaconBlockData
 }
 type BeaconBlockData struct {
-	message consensus_core.BeaconBlock
+	Message consensus_core.BeaconBlock
 }
 type UpdateResponse = []UpdateData
 type UpdateData struct {
-	data consensus_core.Update
+	Data consensus_core.Update
 }
 type FinalityUpdateResponse struct {
-	data consensus_core.FinalityUpdate
+	Data consensus_core.FinalityUpdate
 }
 type OptimisticUpdateResponse struct {
-	data consensus_core.OptimisticUpdate
+	Data consensus_core.OptimisticUpdate
 }
 type SpecResponse struct {
-	data Spec
+	Data Spec
 }
 type Spec struct {
-	chain_id uint64
+	ChainId uint64
 }
 type BootstrapResponse struct {
-	data consensus_core.Bootstrap
+	Data consensus_core.Bootstrap
 }
 
