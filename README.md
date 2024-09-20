@@ -2,14 +2,23 @@
 ![tests](https://github.com/BlocSoc-iitr/selene/actions/workflows/test.yml/badge.svg)
 ![linter](https://github.com/BlocSoc-iitr/selene/actions/workflows/cilint.yml/badge.svg)
 
+# Introduction
 
-# experiment
+Selene is a fast, open source, portable & secure light client for Ethereum written in Golang. We derived our inspiration from [Helios](https://github.com/a16z/helios) which is a light client written in Rust. The project is in active maintenance on the (dev)[https://github.com/BlocSoc-iitr/selene/tree/dev] branch. 
 
-NOTE: The functions need not have correct parameters and return data types yet
+# Architecture
 
+# Installing
+Yet to come.
 
-## Suggestions
+# Usage
+Yet to come.
 
-- `Option<u8>` can be implemented by taking a pointer to a `uint8` value ?
-- we can create a `constants.go` if needed.
-- if we need to modify some struct datatype , we can have a method taking it as a pointer and modify , instead of returning after making a new copy
+# Testing
+In progress.
+
+# Warning
+Selene is still experimental software. We hope to ship v0.1 by November 2024.
+
+# Contributing
+We openly welcome contributions to selene from the broader ethereum community. For details, refer [CONTRIBUTION GUIDELINES](https://github.com/BlocSoc-iitr/selene/blob/dev/CONTRIBUTING.md)
