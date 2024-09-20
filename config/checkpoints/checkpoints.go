@@ -75,7 +75,7 @@ type Slot struct {
 // @param url: string - url to fetch
 // @return *http.Response, error
 // Fetches the response from the given url
-func get(url string) (*http.Response, error) {
+func Get(url string) (*http.Response, error) {
 	var resp *http.Response
 
 	// Retry with default settings
@@ -107,7 +107,7 @@ func get(url string) (*http.Response, error) {
 // @param data: []byte - data to deserialize
 // @return *uint64, error
 // Deserializes the given data to uint64
-func deserialize_slot(data []byte) (*uint64, error) {
+func DeserializeSlot(data []byte) (*uint64, error) {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func deserialize_slot(data []byte) (*uint64, error) {
 
 // create a new CheckpointFallback object
 // @return CheckpointFallback
-func (ch CheckpointFallback) new() CheckpointFallback {
+func (ch CheckpointFallback) New() CheckpointFallback {
 	return CheckpointFallback{
 		Services: make(map[config.Network][]CheckpointFallbackService),
 		Networks: []config.Network{
@@ -145,7 +145,7 @@ func (ch CheckpointFallback) new() CheckpointFallback {
 // / Build the checkpoint fallback service from the community-maintained list by [ethPandaOps](https://github.com/ethpandaops).
 // /
 // / The list is defined in [ethPandaOps/checkpoint-fallback-service](https://github.com/ethpandaops/checkpoint-sync-health-checks/blob/master/_data/endpoints.yaml).
-func (ch CheckpointFallback) build() (CheckpointFallback, error) {
+func (ch CheckpointFallback) Build() (CheckpointFallback, error) {
 	resp, err := http.Get(CHECKPOINT_SYNC_SERVICES_LIST)
 	if err != nil {
 		return ch, fmt.Errorf("failed to fetch services list: %w", err)
@@ -202,9 +202,9 @@ func (ch CheckpointFallback) build() (CheckpointFallback, error) {
 }
 
 // fetch the latest checkpoint from the given network
-func (ch CheckpointFallback) fetch_latest_checkpoint(network config.Network) byte256 {
-	services := ch.get_healthy_fallback_services(network)
-	checkpoint, error := ch.fetch_latest_checkpoint_from_services(services)
+func (ch CheckpointFallback) FetchLatestCheckpoint(network config.Network) byte256 {
+	services := ch.GetHealthyFallbackServices(network)
+	checkpoint, error := ch.FetchLatestCheckpointFromServices(services)
 	if error != nil {
 		return byte256{}
 	}
@@ -213,8 +213,8 @@ func (ch CheckpointFallback) fetch_latest_checkpoint(network config.Network) byt
 }
 
 // fetch the latest checkpoint from the given endpoint
-func (ch CheckpointFallback) query_service(endpoint string) (*RawSlotResponse, error) {
-	constructed_url := ch.construct_url(endpoint)
+func (ch CheckpointFallback) QueryService(endpoint string) (*RawSlotResponse, error) {
+	constructed_url := ch.ConstructUrl(endpoint)
 	resp, err := http.Get(constructed_url)
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (ch CheckpointFallback) query_service(endpoint string) (*RawSlotResponse, e
 }
 
 // fetch the latest checkpoint from the given services
-func (ch CheckpointFallback) fetch_latest_checkpoint_from_services(services []CheckpointFallbackService) (byte256, error) {
+func (ch CheckpointFallback) FetchLatestCheckpointFromServices(services []CheckpointFallbackService) (byte256, error) {
 	var (
 		slots      []Slot
 		wg         sync.WaitGroup
@@ -242,7 +242,7 @@ func (ch CheckpointFallback) fetch_latest_checkpoint_from_services(services []Ch
 		wg.Add(1)
 		go func(service CheckpointFallbackService) {
 			defer wg.Done()
-			raw, err := ch.query_service(service.Endpoint)
+			raw, err := ch.QueryService(service.Endpoint)
 			if err != nil {
 				errorsChan <- fmt.Errorf("failed to fetch checkpoint from service %s: %w", service.Endpoint, err)
 				return
@@ -322,8 +322,8 @@ func (ch CheckpointFallback) fetch_latest_checkpoint_from_services(services []Ch
 	return mostCommon, nil
 }
 
-func (ch CheckpointFallback) fetch_latest_checkpoint_from_api(url string) (byte256, error) {
-	constructed_url := ch.construct_url(url)
+func (ch CheckpointFallback) FetchLatestCheckpointFromApi(url string) (byte256, error) {
+	constructed_url := ch.ConstructUrl(url)
 	resp, err := http.Get(constructed_url)
 
 	if err != nil {
@@ -349,11 +349,11 @@ func (ch CheckpointFallback) fetch_latest_checkpoint_from_api(url string) (byte2
 
 }
 
-func (ch CheckpointFallback) construct_url(endpoint string) string {
+func (ch CheckpointFallback) ConstructUrl(endpoint string) string {
 	return fmt.Sprintf("%s/checkpointz/v1/beacon/slots", endpoint)
 }
 
-func (ch CheckpointFallback) get_all_fallback_endpoints(network config.Network) []string {
+func (ch CheckpointFallback) GetAllFallbackEndpoints(network config.Network) []string {
 	var endpoints []string
 	for _, service := range ch.Services[network] {
 		endpoints = append(endpoints, service.Endpoint)
@@ -363,7 +363,7 @@ func (ch CheckpointFallback) get_all_fallback_endpoints(network config.Network) 
 
 }
 
-func (ch CheckpointFallback) get_healthy_fallback_endpoints(network config.Network) []string {
+func (ch CheckpointFallback) GetHealthyFallbackEndpoints(network config.Network) []string {
 	var healthyEndpoints []string
 	for _, service := range ch.Services[network] {
 		if service.Health_from_fallback.Result {
@@ -373,7 +373,7 @@ func (ch CheckpointFallback) get_healthy_fallback_endpoints(network config.Netwo
 	return healthyEndpoints
 
 }
-func (ch CheckpointFallback) get_healthy_fallback_services(network config.Network) []CheckpointFallbackService {
+func (ch CheckpointFallback) GetHealthyFallbackServices(network config.Network) []CheckpointFallbackService {
 	var healthyServices []CheckpointFallbackService
 	for _, service := range ch.Services[network] {
 		if service.Health_from_fallback.Result {
@@ -383,6 +383,6 @@ func (ch CheckpointFallback) get_healthy_fallback_services(network config.Networ
 	return healthyServices
 
 }
-func (ch CheckpointFallback) get_fallback_services(network config.Network) []CheckpointFallbackService {
+func (ch CheckpointFallback) GetFallbackServices(network config.Network) []CheckpointFallbackService {
 	return ch.Services[network]
 }

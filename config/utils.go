@@ -7,7 +7,7 @@ import (
 	"github.com/BlocSoc-iitr/selene/common"
 )
 
-func bytes_serialise(bytes []byte) ([]byte, error) {
+func BytesSerialise(bytes []byte) ([]byte, error) {
 
 	if bytes == nil {
 		return json.Marshal(nil)
@@ -21,7 +21,7 @@ func bytes_serialise(bytes []byte) ([]byte, error) {
 
 }
 
-func bytes_deserialise(data []byte) ([]byte, error) {
+func BytesDeserialise(data []byte) ([]byte, error) {
 	var bytesOpt *string
 	if err := json.Unmarshal(data, &bytesOpt); err != nil {
 		return nil, err
