@@ -4,9 +4,9 @@
 package consensus_core
 
 type BeaconBlock struct {
-	slot           uint64
-	proposer_index uint64
-	parent_root    [32]byte
+	Slot           uint64
+	Proposer_index uint64
+	Parent_root    [32]byte
 	state_root     [32]byte
 	body           BeaconBlockBody
 }
