@@ -1,7 +1,2 @@
-# experiment
-
-NOTE: The functions need not have correct parameters and return data types yet
-
-## Suggestions
-
-
+# selene
+Please refer [dev](https://github.com/BlocSoc-iitr/selene/tree/dev) branch for development updates.
