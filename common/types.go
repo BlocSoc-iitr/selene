@@ -1,19 +1,16 @@
 package common
 
-//other option is to import a package of go-ethereum but that was weird
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
-	"strconv"
 )
 
-// need to confirm how such primitive types will be imported,
-//
-// Transaction  https://docs.rs/alloy/latest/alloy/rpc/types/struct.Transaction.html
-// address:  20 bytes
-// B256: 32 bytes  https://bluealloy.github.io/revm/docs/revm/precompile/primitives/type.B256.html
 type Address struct {
 	Addr [20]byte
 }
@@ -40,29 +37,65 @@ type Block struct {
 	Transactions     Transactions
 	TransactionsRoot [32]byte
 	Uncles           [][32]byte
+	BlobGasUsed      *uint64
+	ExcessBlobGas    *uint64
 }
 
-// an enum having 2 types- how to implement??
 type Transactions struct {
 	Hashes [][32]byte
-	Full   []types.Transaction //transaction needs to be defined
+	Full   []Transaction // transaction needs to be defined
+}
+
+type Transaction struct {
+	AccessList           types.AccessList
+	Hash                 common.Hash
+	Nonce                uint64
+	BlockHash            [32]byte
+	BlockNumber          *uint64
+	TransactionIndex     uint64
+	From                 string
+	To                   *common.Address
+	Value                *big.Int
+	GasPrice             *big.Int
+	Gas                  uint64
+	Input                []byte
+	ChainID              *big.Int
+	TransactionType      uint8
+	Signature            *Signature
+	MaxFeePerGas         *big.Int
+	MaxPriorityFeePerGas *big.Int
+	MaxFeePerBlobGas     *big.Int
+	BlobVersionedHashes  []common.Hash
+}
+
+type Signature struct {
+	R       string
+	S       string
+	V       uint64
+	YParity Parity
+}
+
+type Parity struct {
+	Value bool
 }
 
 func Default() *Transactions {
 	return &Transactions{
-		Full: []types.Transaction{},
+		Full: []Transaction{},
 	}
 }
+
 func (t *Transactions) HashesFunc() [][32]byte {
-	if len(t.Hashes) > 0 { //if Transactions struct contains hashes then return them directly
+	if len(t.Hashes) > 0 {
 		return t.Hashes
 	}
 	hashes := make([][32]byte, len(t.Full))
 	for i := range t.Full {
-		hashes[i] = t.Full[i].Hash()
+		hashes[i] = t.Full[i].Hash // Use the Hash field directly
 	}
 	return hashes
 }
+
 func (t Transactions) MarshalJSON() ([]byte, error) {
 	if len(t.Hashes) > 0 {
 		return json.Marshal(t.Hashes)
@@ -70,7 +103,6 @@ func (t Transactions) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.Full)
 }
 
-// can be an enum
 type BlockTag struct {
 	Latest    bool
 	Finalized bool
@@ -106,18 +138,21 @@ func (b *BlockTag) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
 func parseBlockNumber(block string) (uint64, error) {
 	if len(block) > 2 && block[:2] == "0x" {
 		return parseHexUint64(block[2:])
 	}
 	return parseDecimalUint64(block)
 }
+
 func parseHexUint64(hexStr string) (uint64, error) {
 	return strconv.ParseUint(hexStr, 16, 64)
 }
+
 func parseDecimalUint64(decStr string) (uint64, error) {
 	return strconv.ParseUint(decStr, 10, 64)
 }
 
-// need some error structs and enums as well
-// Example BlockNotFoundError
+// Example error structs can be defined here
+// type BlockNotFoundError struct {}
