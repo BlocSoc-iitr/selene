@@ -6,7 +6,7 @@ import (
 	merkletree "github.com/wealdtech/go-merkletree"
 )
 
-func validateMerkleProof(
+func ValidateMerkleProof(
 	root []byte,
 	leaf []byte,
 	proof *merkletree.Proof,
