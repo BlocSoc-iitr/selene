@@ -7,7 +7,7 @@ import (
 func TestBytesSerialise(t *testing.T) {
 	tests := []struct {
 		input    []byte
-		expected string 
+		expected string
 	}{
 		{nil, "null"},
 		{[]byte{}, "\"\""},
