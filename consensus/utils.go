@@ -10,7 +10,6 @@ import (
 	"github.com/BlocSoc-iitr/selene/config"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/utils/bls"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/pkg/errors"
@@ -94,28 +93,16 @@ func isProofValid(
 		return false
 	}
 
-	// Create the Merkle tree from the branch data
-	tree, err := merkletree.New(branch)
-	if err != nil {
-		fmt.Printf("Error creating Merkle tree: %v", err)
-		return false
-	}
-
-	// Fetch the root hash of the tree
-	root := tree.Root()
-
-	// Validate the Merkle proof for the leaf object
-	proof, err := tree.GenerateProof(leafObject)
-	if err != nil {
-		fmt.Printf("Error generating proof: %v", err)
-		return false
-	}
-
 	// Initialize the derived root as the leaf object's hash
-	derivedRoot := crypto.Keccak256(leafObject)
+	derivedRoot, errFetchingTreeHashRoot := TreeHashRoot(leafObject)
+
+	if errFetchingTreeHashRoot != nil {
+		fmt.Printf("Error fetching tree hash root: %v", errFetchingTreeHashRoot)
+		return false
+	}
 
 	// Iterate over the proof's hashes
-	for i, hash := range proof.Hashes {
+	for i, hash := range branch {
 		hasher := sha256.New()
 
 		// Use the index to determine how to combine the hashes
@@ -133,7 +120,7 @@ func isProofValid(
 	}
 
 	// Compare the final derived root with the attested header's state root
-	return bytes.Equal(derivedRoot, attestedHeader.StateRoot[:]) && bytes.Equal(root, attestedHeader.StateRoot[:])
+	return bytes.Equal(derivedRoot, attestedHeader.StateRoot[:])
 }
 
 func CalculateForkVersion(forks *config.Forks, slot uint64) [4]byte {
