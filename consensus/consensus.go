@@ -320,7 +320,7 @@ func (in *Inner) get_payloads(ctx context.Context, startSlot, endSlot uint64) ([
 			}
 			payload := block.Body.ExecutionPayload
 			if payload.ParentHash != prevParentHash {
-				log.Printf("Error while backfilling blocks: expected block hash %v but got %v", prevParentHash)
+				log.Printf("Error while backfilling blocks: expected block hash %v but got %v", prevParentHash, payload.ParentHash)
 				return
 			}
 			prevParentHash = *&payload.ParentHash
