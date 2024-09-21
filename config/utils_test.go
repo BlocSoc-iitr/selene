@@ -1,4 +1,5 @@
 package config
+
 import (
 	"testing"
 )
@@ -9,7 +10,7 @@ func TestBytesSerialise(t *testing.T) {
 		expected string 
 	}{
 		{nil, "null"},
-		{[]byte{}, "\"\""}, // This should be checked
+		{[]byte{}, "\"\""},
 		{[]byte{0x01, 0x02, 0x03}, "\"010203\""},
 	}
 
@@ -27,14 +28,13 @@ func TestBytesSerialise(t *testing.T) {
 	}
 }
 
-
 func TestBytesDeserialise(t *testing.T) {
 	tests := []struct {
-		input    string // input JSON string
+		input    string
 		expected []byte
 	}{
 		{"null", nil},
-		{"\"\"", []byte{}}, // Adjusted expectation for empty JSON string
+		{"\"\"", []byte{}},
 		{"\"010203\"", []byte{0x01, 0x02, 0x03}},
 	}
 
