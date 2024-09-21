@@ -7,24 +7,12 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/BlocSoc-iitr/selene/config"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/utils/bls"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/ethereum/go-ethereum/crypto"
 )
-
-type Forks struct {
-	Genesis   ForkVersion
-	Altair    ForkVersion
-	Bellatrix ForkVersion
-	Capella   ForkVersion
-	Deneb     ForkVersion
-}
-
-type ForkVersion struct {
-	Epoch       uint64
-	ForkVersion [4]byte
-}
 
 func TreeHashRoot(leaves [][]byte) ([]byte, error) {
 	if len(leaves) == 0 {
@@ -128,20 +116,20 @@ func isProofValid(
 	return bytes.Equal(derivedRoot[:], attestedHeader.StateRoot[:])
 }
 
-func CalculateForkVersion(forks *Forks, slot uint64) [4]byte {
+func CalculateForkVersion(forks *config.Forks, slot uint64) [4]byte {
 	epoch := slot / 32
 
 	switch {
 	case epoch >= forks.Deneb.Epoch:
-		return forks.Deneb.ForkVersion
+		return [4]byte(forks.Deneb.ForkVersion)
 	case epoch >= forks.Capella.Epoch:
-		return forks.Capella.ForkVersion
+		return [4]byte(forks.Capella.ForkVersion)
 	case epoch >= forks.Bellatrix.Epoch:
-		return forks.Bellatrix.ForkVersion
+		return [4]byte(forks.Bellatrix.ForkVersion)
 	case epoch >= forks.Altair.Epoch:
-		return forks.Altair.ForkVersion
+		return [4]byte(forks.Altair.ForkVersion)
 	default:
-		return forks.Genesis.ForkVersion
+		return [4]byte(forks.Genesis.ForkVersion)
 	}
 }
 
