@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/BlocSoc-iitr/selene/common"
+	"github.com/BlocSoc-iitr/selene/utils"
 )
 
 func BytesSerialise(bytes []byte) ([]byte, error) {
@@ -30,7 +30,7 @@ func BytesDeserialise(data []byte) ([]byte, error) {
 	if bytesOpt == nil {
 		return nil, nil
 	} else {
-		bytes, err := common.Hex_str_to_bytes(*bytesOpt)
+		bytes, err := utils.Hex_str_to_bytes(*bytesOpt)
 		if err != nil {
 			return nil, err
 		}
