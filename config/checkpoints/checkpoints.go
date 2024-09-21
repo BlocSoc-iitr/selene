@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
+	"context"
+	"time"
+	"log"
 	"github.com/BlocSoc-iitr/selene/config"
 	"github.com/avast/retry-go"
 	"gopkg.in/yaml.v2"
@@ -107,23 +109,26 @@ func Get(url string) (*http.Response, error) {
 // @param data: []byte - data to deserialize
 // @return *uint64, error
 // Deserializes the given data to uint64
-func DeserializeSlot(data []byte) (*uint64, error) {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+func DeserializeSlot(input []byte) (*uint64, error) {
+	var value interface{}
+	if err := json.Unmarshal(input, &value); err != nil {
 		return nil, err
 	}
 
-	if len(s) > 1 && s[0] == '"' && s[len(s)-1] == '"' {
-		s = s[1 : len(s)-1]
+	switch v := value.(type) {
+	case string:
+		// Try to parse a string as a number
+		num, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid string format: %s", v)
+		}
+		return &num, nil
+	case float64:
+		num := uint64(v)
+		return &num, nil
+	default:
+		return nil, fmt.Errorf("unexpected type: %T", v)
 	}
-
-	value, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	return &value, nil
-
 }
 
 // create a new CheckpointFallback object
@@ -170,27 +175,48 @@ func (ch CheckpointFallback) Build() (CheckpointFallback, error) {
 			return ch, fmt.Errorf("no services found for network %s", network)
 		}
 
-		serviceList := serviceListRaw.([]interface{})
-		for _, service := range serviceList {
-			serviceMap := service.(map[interface{}]interface{})
-			endpoint := serviceMap["endpoint"].(string)
-			name := serviceMap["name"].(string)
-			state := serviceMap["state"].(bool)
-			verification := serviceMap["verification"].(bool)
-			contacts := serviceMap["contacts"].(*yaml.MapSlice)
-			notes := serviceMap["notes"].(*yaml.MapSlice)
-			health := serviceMap["health"].(map[interface{}]interface{})
-			healthResult := health["result"].(bool)
-			healthDate := health["date"].(string)
+		serviceList, ok := serviceListRaw.([]interface{})
+		if !ok {
+			return ch, fmt.Errorf("expected a list for services in network %s", network)
+		}
+
+		for _, serviceRaw := range serviceList {
+			serviceMap, ok := serviceRaw.(map[interface{}]interface{})
+			if !ok {
+				return ch, fmt.Errorf("expected a map for service in network %s", network)
+			}
+
+			endpoint, _ := serviceMap["endpoint"].(string)  // Handle potential nil
+			name, _ := serviceMap["name"].(string)          // Handle potential nil
+			state, _ := serviceMap["state"].(bool)          // Handle potential nil
+			verification, _ := serviceMap["verification"].(bool)  // Handle potential nil
+
+			// Check contacts and notes
+			var contacts *yaml.MapSlice
+			if c, ok := serviceMap["contacts"].(*yaml.MapSlice); ok {
+				contacts = c
+			}
+
+			var notes *yaml.MapSlice
+			if n, ok := serviceMap["notes"].(*yaml.MapSlice); ok {
+				notes = n
+			}
+
+			healthRaw, ok := serviceMap["health"].(map[interface{}]interface{})
+			if !ok {
+				return ch, fmt.Errorf("expected a map for health in service %s", name)
+			}
+			healthResult, _ := healthRaw["result"].(bool)  // Handle potential nil
+			healthDate, _ := healthRaw["date"].(string)    // Handle potential nil
 
 			ch.Services[network] = append(ch.Services[network], CheckpointFallbackService{
-				Endpoint:     endpoint,
-				Name:         name,
-				State:        state,
-				Verification: verification,
-				Contacts:     contacts,
-				Notes:        notes,
-				Health_from_fallback: &Health{
+				Endpoint:              endpoint,
+				Name:                  name,
+				State:                 state,
+				Verification:          verification,
+				Contacts:              contacts,
+				Notes:                 notes,
+				Health_from_fallback:  &Health{
 					Result: healthResult,
 					Date:   healthDate,
 				},
@@ -200,6 +226,7 @@ func (ch CheckpointFallback) Build() (CheckpointFallback, error) {
 
 	return ch, nil
 }
+
 
 // fetch the latest checkpoint from the given network
 func (ch CheckpointFallback) FetchLatestCheckpoint(network config.Network) byte256 {
@@ -231,96 +258,74 @@ func (ch CheckpointFallback) QueryService(endpoint string) (*RawSlotResponse, er
 
 // fetch the latest checkpoint from the given services
 func (ch CheckpointFallback) FetchLatestCheckpointFromServices(services []CheckpointFallbackService) (byte256, error) {
-	var (
-		slots      []Slot
-		wg         sync.WaitGroup
-		slotChan   = make(chan Slot)
-		errorsChan = make(chan error)
-	)
+    var (
+        slots      []Slot
+        wg         sync.WaitGroup
+        slotChan   = make(chan Slot, len(services)) // Buffered channel
+        errorsChan = make(chan error, len(services))
+    )
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
 
-	for _, service := range services {
-		wg.Add(1)
-		go func(service CheckpointFallbackService) {
-			defer wg.Done()
-			raw, err := ch.QueryService(service.Endpoint)
-			if err != nil {
-				errorsChan <- fmt.Errorf("failed to fetch checkpoint from service %s: %w", service.Endpoint, err)
-				return
-			}
+    for _, service := range services {
+        wg.Add(1)
+        go func(service CheckpointFallbackService) {
+            defer wg.Done()
+            raw, err := ch.QueryService(service.Endpoint)
+            if err != nil {
+                errorsChan <- fmt.Errorf("failed to fetch checkpoint from service %s: %w", service.Endpoint, err)
+                return
+            }
+            if len(raw.Data.Slots) > 0 {
+                slotChan <- raw.Data.Slots[0] // Send the first valid slot
+            }
+        }(service)
+    }
 
-			if len(raw.Data.Slots) > 0 {
-				for _, slot := range raw.Data.Slots {
-					if slot.Block_root != nil {
-						slotChan <- slot
-						return
-					}
-				}
-			}
-		}(service)
-	}
+    go func() {
+        wg.Wait()
+        close(slotChan)
+        close(errorsChan)
+    }()
 
-	wg.Wait()
-	close(slotChan)
-	close(errorsChan)
-
-	var allErrors error
-	for err := range errorsChan {
-		if allErrors == nil {
-			allErrors = err
-		} else {
-			allErrors = fmt.Errorf("%v; %v", allErrors, err)
-		}
-	}
-
-	if allErrors != nil {
-		return byte256{}, allErrors
-	}
-
-	for slot := range slotChan {
-		slots = append(slots, slot)
-	}
-
-	if len(slots) == 0 {
-		return byte256{}, fmt.Errorf("failed to find max epoch from checkpoint slots")
-	}
-
-	maxEpochSlot := slots[0]
-	for _, slot := range slots {
-		if slot.Epoch > maxEpochSlot.Epoch {
-			maxEpochSlot = slot
-		}
-	}
-	maxEpoch := maxEpochSlot.Epoch
-
-	var maxEpochSlots []Slot
-	for _, slot := range slots {
-		if slot.Epoch == maxEpoch {
-			maxEpochSlots = append(maxEpochSlots, slot)
-		}
-	}
-
-	checkpoints := make(map[byte256]int)
-	for _, slot := range maxEpochSlots {
-		if slot.Block_root != nil {
-			checkpoints[*slot.Block_root]++
-		}
-	}
-
-	var mostCommon byte256
-	maxCount := 0
-	for blockRoot, count := range checkpoints {
-		if count > maxCount {
-			mostCommon = blockRoot
-			maxCount = count
-		}
-	}
-
-	if maxCount == 0 {
-		return byte256{}, fmt.Errorf("no checkpoint found")
-	}
-
-	return mostCommon, nil
+    for {
+        select {
+        case slot, ok := <-slotChan:
+            if !ok {
+                // Channel closed, all slots processed
+                if len(slots) == 0 {
+                    return byte256{}, fmt.Errorf("failed to find max epoch from checkpoint slots")
+                }
+                return processSlots(slots)
+            }
+            slots = append(slots, slot)
+        case err := <-errorsChan:
+            // Log the error but continue processing
+            log.Printf("Error fetching checkpoint: %v", err)
+        case <-ctx.Done():
+            if len(slots) == 0 {
+                return byte256{}, ctx.Err()
+            }
+            return processSlots(slots)
+        }
+    }
 }
+
+func processSlots(slots []Slot) (byte256, error) {
+    maxEpochSlot := slots[0]
+    for _, slot := range slots {
+        if slot.Epoch > maxEpochSlot.Epoch {
+            maxEpochSlot = slot
+        }
+    }
+
+    if maxEpochSlot.Block_root == nil {
+        return byte256{}, fmt.Errorf("no valid block root found")
+    }
+
+    return *maxEpochSlot.Block_root, nil
+}
+
 
 func (ch CheckpointFallback) FetchLatestCheckpointFromApi(url string) (byte256, error) {
 	constructed_url := ch.ConstructUrl(url)
