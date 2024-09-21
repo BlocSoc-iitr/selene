@@ -13,7 +13,7 @@ const (
 	GOERLI  Network = "GOERLI"
 	SEPOLIA Network = "SEPOLIA"
 )
-func (n Network) baseConfig(s string) (BaseConfig, error) {
+func (n Network) BaseConfig(s string) (BaseConfig, error) {
 	switch strings.ToUpper(s) {
 	case "MAINNET":
 		config, err := Mainnet()
@@ -37,7 +37,7 @@ func (n Network) baseConfig(s string) (BaseConfig, error) {
 		return BaseConfig{}, errors.New("network not recognized")
 	}
 }
-func (n Network) chainID (id uint64) (BaseConfig, error) {
+func (n Network) ChainID(id uint64) (BaseConfig, error) {
 	switch id {
 	case 1:
 		config, err := Mainnet()

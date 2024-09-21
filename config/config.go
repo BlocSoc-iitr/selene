@@ -25,7 +25,7 @@ type Config struct {
 // only if we are using CLI
 func (c Config) from_file(configPath *string, network *string, cliConfig *CliConfig) Config {
 	n := Network(*network)
-	baseConfig, err := n.baseConfig(*network)
+	baseConfig, err := n.BaseConfig(*network)
 	if err != nil {
 		baseConfig = BaseConfig{}.Default()
 	}

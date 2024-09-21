@@ -2,6 +2,8 @@ package types
 
 // Serialization and Deserialization for ExecutionPayload and BeaconBlockBody can be done by importing from prewritten functions in utils wherever needed.
 
+
+
 type BeaconBlock struct {
 	Slot          uint64
 	ProposerIndex uint64
@@ -217,7 +219,7 @@ type GenericUpdate struct {
 	FinalityBranch          []Bytes32
 }
 
-func (g GenericUpdate) From() {
+func (g *GenericUpdate) From() {
 	g.AttestedHeader = Header{}
 	g.SyncAggregate = SyncAggregate{}
 	g.SignatureSlot = 0
