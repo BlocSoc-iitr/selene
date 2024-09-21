@@ -108,7 +108,7 @@ func (con ConsensusClient) New(rpc *string, config config.Config) ConsensusClien
 			log.Printf("error while loading checkpoint: %v", errorWhileLoadingCheckpoint)
 		}
 	}
-	if &initialCheckpoint == nil {
+	if initialCheckpoint == [32]byte{} {
 		panic("No checkpoint found")
 	}
 	In := &Inner{}
@@ -177,7 +177,7 @@ func (con ConsensusClient) Shutdown() error {
 	}
 	return nil
 }
-func (con ConsensusClient) expected_current_slot() uint64 {
+func (con ConsensusClient) Expected_current_slot() uint64 {
 	now := time.Now().Unix()
 	// Assuming SLOT_DURATION is the duration of each slot in seconds
 	const SLOT_DURATION uint64 = 12
@@ -195,11 +195,14 @@ func sync_fallback(inner *Inner, fallback *string) error {
 func sync_all_fallback(inner *Inner, chainID uint64) error {
 	var n config.Network
 	network, err := n.ChainID(chainID)
+	if err != nil {
+		return err
+	}
 
 	ch := checkpoints.CheckpointFallback{}
 
-	checkpointFallback, err := ch.Build()
-	if err != nil {
+	checkpointFallback, errWhileCheckpoint := ch.Build()
+	if errWhileCheckpoint != nil {
 		return err
 	}
 
@@ -292,7 +295,7 @@ func (in *Inner) check_execution_payload(ctx context.Context, slot *uint64) (*co
 	return &payload, nil
 }
 
-func (in *Inner) get_payloads(ctx context.Context, startSlot, endSlot uint64) ([]interface{}, error) {
+func (in *Inner) Get_payloads(ctx context.Context, startSlot, endSlot uint64) ([]interface{}, error) {
 	var payloads []interface{}
 
 	// Fetch the block at endSlot to get the initial parent hash
@@ -323,8 +326,8 @@ func (in *Inner) get_payloads(ctx context.Context, startSlot, endSlot uint64) ([
 				log.Printf("Error while backfilling blocks: expected block hash %v but got %v", prevParentHash, payload.ParentHash)
 				return
 			}
-			prevParentHash = *&payload.ParentHash
-			payloadsChan <- *&payload
+			prevParentHash = payload.ParentHash
+			payloadsChan <- payload
 		}(slot)
 	}
 
@@ -426,6 +429,7 @@ func (in *Inner) sync(checkpoint [32]byte) error {
 	in.apply_finality_update(&finalityUpdate)
 
 	// Fetch and apply optimistic update
+
 	optimisticUpdate, err := in.RPC.GetOptimisticUpdate()
 	if err != nil {
 		return err
@@ -502,7 +506,7 @@ func (in *Inner) bootstrap(checkpoint [32]byte) {
 
 	isValid := in.is_valid_checkpoint(bootstrap.Header.Slot)
 	if !isValid {
-		if in.Config.StrictCheckpointAge == true {
+		if in.Config.StrictCheckpointAge {
 			log.Printf("checkpoint too old, consider using a more recent checkpoint")
 			return
 		} else {
@@ -576,35 +580,37 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		}
 
 		updateAttestedPeriod := CalcSyncPeriod(update.AttestedHeader.Slot)
-		updateHasNextCommittee := store.NextSyncCommitee == nil && &update.NextSyncCommittee != nil && updateAttestedPeriod == storePeriod
+		updateHasNextCommittee := store.NextSyncCommitee == nil && update.NextSyncCommittee != nil && updateAttestedPeriod == storePeriod
 
 		if update.AttestedHeader.Slot <= store.FinalizedHeader.Slot && !updateHasNextCommittee {
 			return ErrNotRelevant
 		}
 
-		if &update.FinalizedHeader != nil && update.FinalityBranch != nil {
+		// Validate finalized header and finality branch
+		if update.FinalizedHeader != (consensus_core.Header{}) && update.FinalityBranch != nil {
 			if !isFinalityProofValid(&update.AttestedHeader, &update.FinalizedHeader, update.FinalityBranch) {
 				return ErrInvalidFinalityProof
 			}
-		} else if &update.FinalizedHeader != nil {
+		} else if update.FinalizedHeader != (consensus_core.Header{}) {
 			return ErrInvalidFinalityProof
 		}
 
-		if &update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch != nil {
+		// Validate next sync committee and its branch
+		if update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch != nil {
 			if !isNextCommitteeProofValid(&update.AttestedHeader, update.NextSyncCommittee, *update.NextSyncCommitteeBranch) {
 				return ErrInvalidNextSyncCommitteeProof
 			}
-		} else if &update.NextSyncCommittee != nil {
+		} else if update.NextSyncCommittee != nil {
 			return ErrInvalidNextSyncCommitteeProof
 		}
 
+		// Set sync committee based on updateSigPeriod
 		var syncCommittee *consensus_core.SyncCommittee
 		if updateSigPeriod == storePeriod {
 			syncCommittee = &in.Store.CurrentSyncCommitee
 		} else {
 			syncCommittee = in.Store.NextSyncCommitee
 		}
-
 		pks, err := GetParticipatingKeys(syncCommittee, update.SyncAggregate.SyncCommitteeBits)
 		if err != nil {
 			return fmt.Errorf("failed to get participating keys: %w", err)
@@ -669,7 +675,7 @@ func (in *Inner) apply_generic_update(store *LightClientStore, update *GenericUp
 	updateAttestedPeriod := CalcSyncPeriod(update.AttestedHeader.Slot)
 
 	updateFinalizedSlot := uint64(0)
-	if &update.FinalizedHeader != nil {
+	if update.FinalizedHeader != (consensus_core.Header{}) {
 		updateFinalizedSlot = update.FinalizedHeader.Slot
 	}
 	updateFinalizedPeriod := CalcSyncPeriod(updateFinalizedSlot)
@@ -763,14 +769,14 @@ func (in *Inner) apply_optimistic_update(update *consensus_core.OptimisticUpdate
 		in.lastCheckpoint = checkpoint
 	}
 }
-func (in *Inner) log_finality_update(update *consensus_core.FinalityUpdate) {
+func (in *Inner) Log_finality_update(update *consensus_core.FinalityUpdate) {
 	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits)) / 512.0 * 100.0
 	decimals := 2
 	if participation == 100.0 {
 		decimals = 1
 	}
 
-	age := in.age(in.Store.FinalizedHeader.Slot)
+	age := in.Age(in.Store.FinalizedHeader.Slot)
 	days := age.Hours() / 24
 	hours := int(age.Hours()) % 24
 	minutes := int(age.Minutes()) % 60
@@ -781,14 +787,14 @@ func (in *Inner) log_finality_update(update *consensus_core.FinalityUpdate) {
 		in.Store.FinalizedHeader.Slot, decimals, participation, int(days), hours, minutes, seconds,
 	)
 }
-func (in *Inner) log_optimistic_update(update *consensus_core.OptimisticUpdate) {
+func (in *Inner) Log_optimistic_update(update *consensus_core.OptimisticUpdate) {
 	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits)) / 512.0 * 100.0
 	decimals := 2
 	if participation == 100.0 {
 		decimals = 1
 	}
 
-	age := in.age(in.Store.OptimisticHeader.Slot)
+	age := in.Age(in.Store.OptimisticHeader.Slot)
 	days := age.Hours() / 24
 	hours := int(age.Hours()) % 24
 	minutes := int(age.Minutes()) % 60
@@ -800,10 +806,10 @@ func (in *Inner) log_optimistic_update(update *consensus_core.OptimisticUpdate) 
 	)
 }
 func (in *Inner) has_finality_update(update *GenericUpdate) bool {
-	return &update.FinalizedHeader != nil && update.FinalityBranch != nil
+	return update.FinalizedHeader != (consensus_core.Header{}) && update.FinalityBranch != nil
 }
 func (in *Inner) has_sync_update(update *GenericUpdate) bool {
-	return &update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch != nil
+	return update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch != nil
 }
 func (in *Inner) safety_threshold() uint64 {
 	return max(in.Store.CurrentMaxActiveParticipants, in.Store.PreviousMaxActiveParticipants) / 2
@@ -854,7 +860,7 @@ func ComputeCommitteeSignRoot(header consensus_core.Bytes32, fork consensus_core
 	// Compute and return the signing root
 	return ComputeSigningRoot(header, domain)
 }
-func (in *Inner) age(slot uint64) time.Duration {
+func (in *Inner) Age(slot uint64) time.Duration {
 	expectedTime := slot*12 + in.Config.Chain.GenesisTime
 	now := time.Now().Unix()
 	return time.Duration(uint64(now)-expectedTime) * time.Second
