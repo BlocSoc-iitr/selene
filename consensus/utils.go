@@ -3,8 +3,9 @@ package consensus
 import (
 	"bytes"
 	"crypto/sha256"
-	"errors"
+	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 
 	"github.com/BlocSoc-iitr/selene/config"
@@ -14,12 +15,15 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func TreeHashRoot(leaves [][]byte) ([]byte, error) {
-	if len(leaves) == 0 {
-		return nil, fmt.Errorf("no leaves provided")
+// TreeHashRoot computes the Merkle root from the provided leaves in a flat []byte slice.
+func TreeHashRoot(data []byte) ([]byte, error) {
+	// Convert the input data into a slice of leaves
+	leaves, err := bytesToLeaves(data)
+	if err != nil {
+		return nil, err
 	}
 
-	nodes := leaves
+	nodes := leaves // Start with the leaf nodes
 
 	for len(nodes) > 1 {
 		var newLevel [][]byte
@@ -39,7 +43,16 @@ func TreeHashRoot(leaves [][]byte) ([]byte, error) {
 		nodes = newLevel
 	}
 
+	// Return the root hash
 	return nodes[0], nil
+}
+
+func bytesToLeaves(data []byte) ([][]byte, error) {
+	var leaves [][]byte
+	if err := json.Unmarshal(data, &leaves); err != nil {
+		return nil, err
+	}
+	return leaves, nil
 }
 
 func CalcSyncPeriod(slot uint64) uint64 {
@@ -77,7 +90,7 @@ func isAggregateValid(sigBytes consensus_core.SignatureBytes, msg [32]byte, pks 
 
 func isProofValid(
 	attestedHeader *consensus_core.Header,
-	leafObject [][]byte, // Byte slice of the leaf object
+	leafObject []byte, // Single byte slice of the leaf object
 	branch [][]byte, // Slice of byte slices for the branch
 	depth, index int, // Depth of the Merkle proof and index of the leaf
 ) bool {
@@ -152,7 +165,7 @@ func GetParticipatingKeys(committee *consensus_core.SyncCommittee, bitfield [64]
 	numBits := len(bitfield) * 8 // Total number of bits
 
 	if len(committee.Pubkeys) > numBits {
-		return nil, errors.New("bitfield is too short for the number of public keys")
+		return nil, fmt.Errorf("bitfield is too short for the number of public keys")
 	}
 
 	for i := 0; i < len(bitfield); i++ {
@@ -198,17 +211,21 @@ type ForkData struct {
 	GenesisValidatorRoot consensus_core.Bytes32
 }
 
-func (fd *ForkData) ToBytes() [][]byte {
-	data := make([][]byte, 2)
-	data[0] = fd.CurrentVersion[:]
-	data[1] = fd.GenesisValidatorRoot[:]
+func (fd *ForkData) ToBytes() []byte {
+	data, err := json.Marshal(fd)
+	if err != nil {
+		log.Println("Error marshaling ForkData:", err)
+		return nil // Or return an empty slice, based on your preference
+	}
 	return data
 }
 
-func (sd *SigningData) ToBytes() [][]byte {
-	data := make([][]byte, 2)
-	data[0] = sd.ObjectRoot[:]
-	data[1] = sd.Domain[:]
+func (sd *SigningData) ToBytes() []byte {
+	data, err := json.Marshal(sd)
+	if err != nil {
+		log.Println("Error marshaling SigningData:", err)
+		return nil // Or return an empty slice, based on your preference
+	}
 	return data
 }
 
