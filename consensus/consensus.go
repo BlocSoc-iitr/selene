@@ -84,11 +84,6 @@ type LightClientStore struct {
 	CurrentMaxActiveParticipants  uint64
 }
 
-type Fork struct {
-	Version uint64
-	Epoch   uint64
-}
-
 func (con ConsensusClient) New(rpc *string, config config.Config) ConsensusClient {
 	blockSend := make(chan common.Block, 256)
 	finalizedBlockSend := make(chan *common.Block)
@@ -220,9 +215,6 @@ func sync_all_fallback(inner *Inner, chainID uint64) error {
 
 	// Fetch the latest checkpoint from the network
 	checkpoint := checkpointFallback.FetchLatestCheckpoint(networkName)
-	if err != nil {
-		return err
-	}
 
 	// Sync using the inner struct's sync method
 	if err := inner.sync(checkpoint); err != nil {
@@ -246,7 +238,7 @@ func (in *Inner) New(rpcURL string, blockSend chan common.Block, finalizedBlockS
 	}
 
 }
-func (in *Inner) Get_rpc() error {
+func (in *Inner) Check_rpc() error {
 	chainID, err := in.RPC.ChainId()
 	if err != nil {
 		return err
@@ -256,7 +248,7 @@ func (in *Inner) Get_rpc() error {
 	}
 	return nil
 }
-func (in *Inner) check_execution_payload(ctx context.Context, slot *uint64) (*consensus_core.ExecutionPayload, error) {
+func (in *Inner) get_execution_payload(ctx context.Context, slot *uint64) (*consensus_core.ExecutionPayload, error) {
 	block, err := in.RPC.GetBlock(*slot)
 	if err != nil {
 		return nil, err
@@ -447,14 +439,14 @@ func (in *Inner) sync(checkpoint [32]byte) error {
 func (in *Inner) send_blocks() error {
 	// Get slot from the optimistic header
 	slot := in.Store.OptimisticHeader.Slot
-	payload, err := in.check_execution_payload(context.Background(), &slot)
+	payload, err := in.get_execution_payload(context.Background(), &slot)
 	if err != nil {
 		return err
 	}
 
 	// Get finalized slot from the finalized header
 	finalizedSlot := in.Store.FinalizedHeader.Slot
-	finalizedPayload, err := in.check_execution_payload(context.Background(), &finalizedSlot)
+	finalizedPayload, err := in.get_execution_payload(context.Background(), &finalizedSlot)
 	if err != nil {
 		return err
 	}
@@ -486,6 +478,8 @@ func (in *Inner) send_blocks() error {
 	return nil
 }
 
+// / Gets the duration until the next update
+// / Updates are scheduled for 4 seconds into each slot
 func (in *Inner) duration_until_next_update() time.Duration {
 	currentSlot := in.expected_current_slot()
 	nextSlot := currentSlot + 1
@@ -498,6 +492,7 @@ func (in *Inner) duration_until_next_update() time.Duration {
 	return time.Duration(nextUpdate) * time.Second
 }
 func (in *Inner) bootstrap(checkpoint [32]byte) {
+
 	bootstrap, errInBootstrap := in.RPC.GetBootstrap(checkpoint)
 	if errInBootstrap != nil {
 		log.Printf("failed to fetch bootstrap: %v", errInBootstrap)
