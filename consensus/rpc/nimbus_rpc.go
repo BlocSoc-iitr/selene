@@ -3,11 +3,12 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 )
 
 // uses types package
@@ -43,15 +44,17 @@ func min(a uint8, b uint8) uint8 {
 	}
 	return b
 }
+
 type NimbusRpc struct {
 	//ConsensusRpc
 	rpc string
 }
+
 func NewNimbusRpc(rpc string) *NimbusRpc {
 	return &NimbusRpc{
 		rpc: rpc}
 }
-func (n *NimbusRpc) GetBootstrap(block_root []byte) (consensus_core.Bootstrap, error) {
+func (n *NimbusRpc) GetBootstrap(block_root [32]byte) (consensus_core.Bootstrap, error) {
 	root_hex := fmt.Sprintf("%x", block_root)
 	req := fmt.Sprintf("%s/eth/v1/beacon/light_client/bootstrap/0x%s", n.rpc, root_hex)
 	var res BootstrapResponse
@@ -111,6 +114,7 @@ func (n *NimbusRpc) ChainId() (uint64, error) {
 	}
 	return res.Data.ChainId, nil
 }
+
 // BeaconBlock, Update,FinalityUpdate ,OptimisticUpdate,Bootstrap yet to be defined in consensus-core/src/types/mod.go
 // For now defined in consensus/consensus_core.go
 type BeaconBlockResponse struct {
@@ -138,4 +142,3 @@ type Spec struct {
 type BootstrapResponse struct {
 	Data consensus_core.Bootstrap
 }
-

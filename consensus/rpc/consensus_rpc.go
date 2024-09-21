@@ -6,7 +6,7 @@ import (
 
 // return types not mention and oarameters as well
 type ConsensusRpc interface {
-	GetBootstrap(block_root []byte) (consensus_core.Bootstrap, error)
+	GetBootstrap(block_root [32]byte) (consensus_core.Bootstrap, error)
 	GetUpdates(period uint64, count uint8) ([]consensus_core.Update, error)
 	GetFinalityUpdate() (consensus_core.FinalityUpdate, error)
 	GetOptimisticUpdate() (consensus_core.OptimisticUpdate, error)
