@@ -6,18 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 
 	"github.com/BlocSoc-iitr/selene/config"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/utils/bls"
-	utilsProof "github.com/BlocSoc-iitr/selene/utils/proof"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/pkg/errors"
-	merkletree "github.com/wealdtech/go-merkletree"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // TreeHashRoot computes the Merkle root from the provided leaves in a flat []byte slice.
-// TreeHashRoot calculates the root hash from the input data.
 func TreeHashRoot(data []byte) ([]byte, error) {
 	// Convert the input data into a slice of leaves
 	leaves, err := bytesToLeaves(data)
@@ -25,19 +23,28 @@ func TreeHashRoot(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// Create the Merkle tree using the leaves
-	tree, err := merkletree.New(leaves)
-	if err != nil {
-		return nil, err
+	nodes := leaves // Start with the leaf nodes
+
+	for len(nodes) > 1 {
+		var newLevel [][]byte
+
+		// Pair nodes and hash them
+		for i := 0; i < len(nodes); i += 2 {
+			if i+1 < len(nodes) {
+				// Hash pair of nodes
+				nodeHash := crypto.Keccak256(append(nodes[i], nodes[i+1]...))
+				newLevel = append(newLevel, nodeHash)
+			} else {
+				// Handle odd number of nodes (carry last node up)
+				newLevel = append(newLevel, nodes[i])
+			}
+		}
+
+		nodes = newLevel
 	}
 
-	// Fetch the root hash of the tree
-	root := tree.Root()
-	if root == nil {
-		return nil, errors.New("failed to calculate the Merkle root")
-	}
-
-	return root, nil
+	// Return the root hash
+	return nodes[0], nil
 }
 
 func bytesToLeaves(data []byte) ([][]byte, error) {
@@ -93,33 +100,36 @@ func isProofValid(
 		return false
 	}
 
-	// Create the tree from the branch data
-	tree, err := merkletree.New(branch)
+	// Compute the root hash of the leaf object
+	derivedRoot, err := TreeHashRoot(leafObject)
 	if err != nil {
-		fmt.Printf("Error creating Merkle tree: %v", err)
 		return false
 	}
 
-	// Fetch the root hash of the tree
-	root := tree.Root()
+	// Iterate through the branch and compute the Merkle root
+	for i, node := range branch {
+		hasher := sha256.New()
 
-	// Validate the Merkle proof by generating it for the leaf object
-	proof, err := tree.GenerateProof(leafObject)
-	if err != nil {
-		fmt.Printf("Error generating proof: %v", err)
-		return false
+		// Check if index / 2^i is odd or even
+		if (index/int(math.Pow(2, float64(i))))%2 != 0 {
+			// If odd, hash(node || derived_root)
+			hasher.Write(node)
+			hasher.Write(derivedRoot[:])
+		} else {
+			// If even, hash(derived_root || node)
+			hasher.Write(derivedRoot[:])
+			hasher.Write(node)
+		}
+
+		// Update the derived root
+		derivedRootNew := sha256.Sum256(hasher.Sum(nil))
+		derivedRoot = derivedRootNew[:]
 	}
 
-	// Validate the Merkle proof
-	isValid, err := utilsProof.ValidateMerkleProof(root, leafObject, proof)
-	if err != nil {
-		fmt.Printf("Error in validating Merkle proof: %v", err)
-		return false
-	}
-
-	// Verify against the attested header's state root
-	return isValid && bytes.Equal(root, attestedHeader.StateRoot[:])
+	// Compare the final derived root with the attested header's state root
+	return bytes.Equal(derivedRoot[:], attestedHeader.StateRoot[:])
 }
+
 func CalculateForkVersion(forks *config.Forks, slot uint64) [4]byte {
 	epoch := slot / 32
 
