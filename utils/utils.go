@@ -1,15 +1,13 @@
-package common
+package utils
 
 import (
 	"encoding/hex"
+	"strings"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// if we need to export the functions , just make their first letter capitalised
 func Hex_str_to_bytes(s string) ([]byte, error) {
 	s = strings.TrimPrefix(s, "0x")
 

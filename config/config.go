@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+
+	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/spf13/viper"
-	"github.com/BlocSoc-iitr/selene/common"
 )
+
 type Config struct {
 	ConsensusRpc         string      `json:"consensus_rpc"`
 	ExecutionRpc         string      `json:"execution_rpc"`
@@ -76,7 +78,7 @@ func (c Config) from_file(configPath *string, network *string, cliConfig *CliCon
 		finalConfig.Checkpoint = (*[32]byte)(*cliConfig.Checkpoint)
 	} else if tomlProvider["checkpoint"] != nil && tomlProvider["checkpoint"].(string) != "" {
 		checkpoint, _ := tomlProvider["checkpoint"].(string)
-		checkpointBytes, err := common.Hex_str_to_bytes(checkpoint)
+		checkpointBytes, err := utils.Hex_str_to_bytes(checkpoint)
 		if err != nil {
 			fmt.Printf("Failed to convert checkpoint value to byte slice, %v", err)
 		}
