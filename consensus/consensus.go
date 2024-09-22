@@ -545,7 +545,7 @@ func apply_bootstrap(store *LightClientStore, bootstrap consensus_core.Bootstrap
 
 }
 
-func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlot uint64, store *LightClientStore, genesisRoots []byte, forks config.Forks) error {
+func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlot uint64, store *LightClientStore, genesisRoots []byte, forks consensus_core.Forks) error {
 	{
 		bits := getBits(update.SyncAggregate.SyncCommitteeBits)
 		if bits == 0 {
@@ -880,7 +880,7 @@ func (in *Inner) is_valid_checkpoint(blockHashSlot uint64) bool {
 }
 
 func isFinalityProofValid(attestedHeader *consensus_core.Header, finalizedHeader *consensus_core.Header, finalityBranch []consensus_core.Bytes32) bool {
-	finalityBranchForProof, err := branchToNodes(finalityBranch)
+	finalityBranchForProof, err := utils.BranchToNodes(finalityBranch)
 	if err != nil {
 		return false
 	}
@@ -888,7 +888,7 @@ func isFinalityProofValid(attestedHeader *consensus_core.Header, finalizedHeader
 }
 
 func isCurrentCommitteeProofValid(attestedHeader *consensus_core.Header, currentCommittee *consensus_core.SyncCommittee, currentCommitteeBranch []consensus_core.Bytes32) bool {
-	CurrentCommitteeForProof, err := branchToNodes(currentCommitteeBranch)
+	CurrentCommitteeForProof, err := utils.BranchToNodes(currentCommitteeBranch)
 	if err != nil {
 		return false
 	}
@@ -896,7 +896,7 @@ func isCurrentCommitteeProofValid(attestedHeader *consensus_core.Header, current
 }
 
 func isNextCommitteeProofValid(attestedHeader *consensus_core.Header, currentCommittee *consensus_core.SyncCommittee, currentCommitteeBranch []consensus_core.Bytes32) bool {
-	currentCommitteeBranchForProof, err := branchToNodes(currentCommitteeBranch)
+	currentCommitteeBranchForProof, err := utils.BranchToNodes(currentCommitteeBranch)
 	if err != nil {
 		return false
 	}

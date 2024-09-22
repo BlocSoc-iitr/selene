@@ -3,25 +3,26 @@ package config
 import (
 	"fmt"
 
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	ConsensusRpc         string      `json:"consensus_rpc"`
-	ExecutionRpc         string      `json:"execution_rpc"`
-	RpcBindIp            *string     `json:"rpc_bind_ip"`
-	RpcPort              *uint16     `json:"rpc_port"`
-	DefaultCheckpoint    [32]byte    `json:"default_checkpoint"` // In cli.go, checkpoint is currently taken as []byte{}
-	Checkpoint           *[32]byte   `json:"checkpoint"`         // but it should be of 32 bytes or [32]byte{}
-	DataDir              *string     `json:"data_dir"`
-	Chain                ChainConfig `json:"chain"`
-	Forks                Forks       `json:"forks"`
-	MaxCheckpointAge     uint64      `json:"max_checkpoint_age"`
-	Fallback             *string     `json:"fallback"`
-	LoadExternalFallback bool        `json:"load_external_fallback"`
-	StrictCheckpointAge  bool        `json:"strict_checkpoint_age"`
-	DatabaseType         *string     `json:"database_type"`
+	ConsensusRpc         string               `json:"consensus_rpc"`
+	ExecutionRpc         string               `json:"execution_rpc"`
+	RpcBindIp            *string              `json:"rpc_bind_ip"`
+	RpcPort              *uint16              `json:"rpc_port"`
+	DefaultCheckpoint    [32]byte             `json:"default_checkpoint"` // In cli.go, checkpoint is currently taken as []byte{}
+	Checkpoint           *[32]byte            `json:"checkpoint"`         // but it should be of 32 bytes or [32]byte{}
+	DataDir              *string              `json:"data_dir"`
+	Chain                ChainConfig          `json:"chain"`
+	Forks                consensus_core.Forks `json:"forks"`
+	MaxCheckpointAge     uint64               `json:"max_checkpoint_age"`
+	Fallback             *string              `json:"fallback"`
+	LoadExternalFallback bool                 `json:"load_external_fallback"`
+	StrictCheckpointAge  bool                 `json:"strict_checkpoint_age"`
+	DatabaseType         *string              `json:"database_type"`
 }
 
 // only if we are using CLI
