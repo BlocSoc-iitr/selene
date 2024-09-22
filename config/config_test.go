@@ -3,10 +3,12 @@ package config
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -23,9 +25,9 @@ var (
 	defaultCheckpoint    = [32]byte{}
 )
 
-/////////////////////////////
-///// from_file() tests /////
-/////////////////////////////
+// ///////////////////////////
+// /// from_file() tests /////
+// ///////////////////////////
 func TestMainnetBaseConfig(t *testing.T) {
 	network := "MAINNET"
 	path := "./config.toml"
@@ -44,8 +46,8 @@ func TestMainnetBaseConfig(t *testing.T) {
 	if !reflect.DeepEqual(config.Chain, mainnetConfig.Chain) {
 		t.Errorf("Expected Chain to be %v, but got %v", mainnetConfig.Chain, config.Chain)
 	}
-	if !reflect.DeepEqual(config.Forks, mainnetConfig.Forks) {
-		t.Errorf("Expected Forks to be %v, but got %v", mainnetConfig.Forks, config.Forks)
+	if !reflect.DeepEqual(consensus_core.Forks, mainnetConfig.Forks) {
+		t.Errorf("Expected Forks to be %v, but got %v", mainnetConfig.Forks, consensus_core.Forks)
 	}
 	if *config.RpcBindIp != mainnetConfig.RpcBindIp {
 		t.Errorf("Expected RpcBindIP to be %s, but got %s", mainnetConfig.RpcBindIp, *config.RpcBindIp)
@@ -179,9 +181,9 @@ func createConfigFile(v *viper.Viper) {
 	}
 }
 
-//////////////////////////////////
-///// to_base_config() tests /////
-//////////////////////////////////
+// ////////////////////////////////
+// /// to_base_config() tests /////
+// ////////////////////////////////
 func TestReturnsCorrectBaseConfig(t *testing.T) {
 	config := Config{
 		ConsensusRpc:         consensusRpc,
@@ -201,8 +203,8 @@ func TestReturnsCorrectBaseConfig(t *testing.T) {
 	if !reflect.DeepEqual(baseConfig.Chain, config.Chain) {
 		t.Errorf("Expected Chain to be %v, got %v", config.Chain, baseConfig.Chain)
 	}
-	if !reflect.DeepEqual(baseConfig.Forks, config.Forks) {
-		t.Errorf("Expected Forks to be %v, got %v", config.Forks, baseConfig.Forks)
+	if !reflect.DeepEqual(baseConfig.Forks, consensus_core.Forks) {
+		t.Errorf("Expected Forks to be %v, got %v", consensus_core.Forks, baseConfig.Forks)
 	}
 	if baseConfig.MaxCheckpointAge != config.MaxCheckpointAge {
 		t.Errorf("Expected Max Checkpoint age to be %v, got %v", config.MaxCheckpointAge, baseConfig.MaxCheckpointAge)
