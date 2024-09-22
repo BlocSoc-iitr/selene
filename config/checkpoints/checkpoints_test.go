@@ -178,7 +178,6 @@ func TestFetchLatestCheckpointFromServices(t *testing.T) {
         t.Errorf("Expected checkpoint %v, got %v", expected, checkpoint)
     }
 }
-
 func TestQueryService(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         if err := json.NewEncoder(w).Encode(RawSlotResponse{

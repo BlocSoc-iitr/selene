@@ -300,8 +300,9 @@ func (ch CheckpointFallback) FetchLatestCheckpointFromServices(services []Checkp
             }
             slots = append(slots, slot)
         case err := <-errorsChan:
-            // Log the error but continue processing
-            log.Printf("Error fetching checkpoint: %v", err)
+            if err != nil {
+                log.Printf("Error fetching checkpoint: %v", err) // Log only if the error is not nil.
+            }
         case <-ctx.Done():
             if len(slots) == 0 {
                 return byte256{}, ctx.Err()
@@ -325,7 +326,6 @@ func processSlots(slots []Slot) (byte256, error) {
 
     return *maxEpochSlot.Block_root, nil
 }
-
 
 func (ch CheckpointFallback) FetchLatestCheckpointFromApi(url string) (byte256, error) {
 	constructed_url := ch.ConstructUrl(url)

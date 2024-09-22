@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"testing"
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 )
 
 func TestChainConfigMarshalUnmarshal(t *testing.T) {
@@ -38,7 +39,7 @@ func TestChainConfigMarshalUnmarshal(t *testing.T) {
 }
 
 func TestForkMarshalUnmarshal(t *testing.T) {
-	originalFork := Fork{
+	originalFork := consensus_core.Fork{
 		Epoch:       0,
 		ForkVersion: []byte{0x01, 0x00, 0x00, 0x00},
 	}
@@ -50,7 +51,7 @@ func TestForkMarshalUnmarshal(t *testing.T) {
 	}
 
 	// Unmarshal the JSON back to Fork
-	var unmarshaledFork Fork
+	var unmarshaledFork consensus_core.Fork
 	err = json.Unmarshal(marshaledData, &unmarshaledFork)
 	if err != nil {
 		t.Fatalf("Error unmarshaling Fork: %v", err)
@@ -71,7 +72,7 @@ func TestUnmarshalInvalidHex(t *testing.T) {
 		"fork_version": "invalid_hex_string"
 	}`
 
-	var fork Fork
+	var fork consensus_core.Fork
 	err := json.Unmarshal([]byte(invalidJSON), &fork)
 	if err == nil {
 		t.Fatal("Expected error unmarshaling invalid hex string, but got nil")
