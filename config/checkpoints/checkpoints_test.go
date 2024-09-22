@@ -1,19 +1,23 @@
 package checkpoints
+
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"io"
 	"github.com/BlocSoc-iitr/selene/config"
 )
+
 type CustomTransport struct {
 	DoFunc func(req *http.Request) (*http.Response, error)
 }
+
 func (t *CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.DoFunc(req)
 }
+
 func TestCheckpointFallbackNew(t *testing.T) {
 	cf := CheckpointFallback{}.New()
 
@@ -55,6 +59,7 @@ func TestDeserializeSlot(t *testing.T) {
 		}
 	}
 }
+
 func TestGetHealthyFallbackEndpoints(t *testing.T) {
 	cf := CheckpointFallback{
 		Services: map[config.Network][]CheckpointFallbackService{
@@ -104,7 +109,7 @@ goerli:
 			DoFunc: func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(yamlData)),
+					Body:       io.NopCloser(bytes.NewBufferString(yamlData)),
 					Header:     make(http.Header),
 				}, nil
 			},
@@ -136,101 +141,102 @@ goerli:
 }
 
 func TestFetchLatestCheckpointFromServices(t *testing.T) {
-    server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if err := json.NewEncoder(w).Encode(RawSlotResponse{
-            Data: RawSlotResponseData{
-                Slots: []Slot{
-                    {Epoch: 100, Block_root: &byte256{1}},
-                },
-            },
-        }); err != nil {
-            t.Fatalf("Failed to encode response: %v", err)
-        }
-    }))
-    defer server1.Close()
+	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewEncoder(w).Encode(RawSlotResponse{
+			Data: RawSlotResponseData{
+				Slots: []Slot{
+					{Epoch: 100, Block_root: &byte256{1}},
+				},
+			},
+		}); err != nil {
+			t.Fatalf("Failed to encode response: %v", err)
+		}
+	}))
+	defer server1.Close()
 
-    server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if err := json.NewEncoder(w).Encode(RawSlotResponse{
-            Data: RawSlotResponseData{
-                Slots: []Slot{
-                    {Epoch: 101, Block_root: &byte256{2}},
-                },
-            },
-        }); err != nil {
-            t.Fatalf("Failed to encode response: %v", err)
-        }
-    }))
-    defer server2.Close()
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewEncoder(w).Encode(RawSlotResponse{
+			Data: RawSlotResponseData{
+				Slots: []Slot{
+					{Epoch: 101, Block_root: &byte256{2}},
+				},
+			},
+		}); err != nil {
+			t.Fatalf("Failed to encode response: %v", err)
+		}
+	}))
+	defer server2.Close()
 
-    cf := CheckpointFallback{}
-    services := []CheckpointFallbackService{
-        {Endpoint: server1.URL},
-        {Endpoint: server2.URL},
-    }
+	cf := CheckpointFallback{}
+	services := []CheckpointFallbackService{
+		{Endpoint: server1.URL},
+		{Endpoint: server2.URL},
+	}
 
-    checkpoint, err := cf.FetchLatestCheckpointFromServices(services)
-    if err != nil {
-        t.Fatalf("Unexpected error: %v", err)
-    }
+	checkpoint, err := cf.FetchLatestCheckpointFromServices(services)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
-    expected := byte256{2}
-    if checkpoint != expected {
-        t.Errorf("Expected checkpoint %v, got %v", expected, checkpoint)
-    }
+	expected := byte256{2}
+	if checkpoint != expected {
+		t.Errorf("Expected checkpoint %v, got %v", expected, checkpoint)
+	}
 }
+
 func TestQueryService(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if err := json.NewEncoder(w).Encode(RawSlotResponse{
-            Data: RawSlotResponseData{
-                Slots: []Slot{
-                    {Epoch: 100, Block_root: &byte256{1}},
-                },
-            },
-        }); err != nil {
-            t.Fatalf("Failed to encode response: %v", err)
-        }
-    }))
-    defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewEncoder(w).Encode(RawSlotResponse{
+			Data: RawSlotResponseData{
+				Slots: []Slot{
+					{Epoch: 100, Block_root: &byte256{1}},
+				},
+			},
+		}); err != nil {
+			t.Fatalf("Failed to encode response: %v", err)
+		}
+	}))
+	defer server.Close()
 
-    cf := CheckpointFallback{}
-    response, err := cf.QueryService(server.URL)
-    if err != nil {
-        t.Fatalf("Unexpected error: %v", err)
-    }
+	cf := CheckpointFallback{}
+	response, err := cf.QueryService(server.URL)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
-    if len(response.Data.Slots) != 1 {
-        t.Errorf("Expected 1 slot, got %d", len(response.Data.Slots))
-    }
+	if len(response.Data.Slots) != 1 {
+		t.Errorf("Expected 1 slot, got %d", len(response.Data.Slots))
+	}
 
-    if response.Data.Slots[0].Epoch != 100 {
-        t.Errorf("Expected epoch 100, got %d", response.Data.Slots[0].Epoch)
-    }
+	if response.Data.Slots[0].Epoch != 100 {
+		t.Errorf("Expected epoch 100, got %d", response.Data.Slots[0].Epoch)
+	}
 }
 
 func TestFetchLatestCheckpointFromApi(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if err := json.NewEncoder(w).Encode(RawSlotResponse{
-            Data: RawSlotResponseData{
-                Slots: []Slot{
-                    {Epoch: 100, Block_root: &byte256{1}},
-                },
-            },
-        }); err != nil {
-            t.Fatalf("Failed to encode response: %v", err)
-        }
-    }))
-    defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewEncoder(w).Encode(RawSlotResponse{
+			Data: RawSlotResponseData{
+				Slots: []Slot{
+					{Epoch: 100, Block_root: &byte256{1}},
+				},
+			},
+		}); err != nil {
+			t.Fatalf("Failed to encode response: %v", err)
+		}
+	}))
+	defer server.Close()
 
-    cf := CheckpointFallback{}
-    checkpoint, err := cf.FetchLatestCheckpointFromApi(server.URL)
-    if err != nil {
-        t.Fatalf("Unexpected error: %v", err)
-    }
+	cf := CheckpointFallback{}
+	checkpoint, err := cf.FetchLatestCheckpointFromApi(server.URL)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
-    expected := byte256{1}
-    if checkpoint != expected {
-        t.Errorf("Expected checkpoint %v, got %v", expected, checkpoint)
-    }
+	expected := byte256{1}
+	if checkpoint != expected {
+		t.Errorf("Expected checkpoint %v, got %v", expected, checkpoint)
+	}
 }
 
 func TestConstructUrl(t *testing.T) {
@@ -260,7 +266,6 @@ func TestGetAllFallbackEndpoints(t *testing.T) {
 		t.Errorf("Expected endpoints %v, got %v", expected, endpoints)
 	}
 }
-
 func TestGetHealthyFallbackServices(t *testing.T) {
 	cf := CheckpointFallback{
 		Services: map[config.Network][]CheckpointFallbackService{
@@ -284,16 +289,17 @@ func TestGetHealthyFallbackServices(t *testing.T) {
 	}
 }
 
+
 func equalNetworks(a, b []config.Network) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	networkMap := make(map[config.Network]struct{})
-	for _, network := range a {
-		networkMap[network] = struct{}{}
+	networkMap := make(map[config.Network]bool)
+	for _, n := range a {
+		networkMap[n] = true
 	}
-	for _, network := range b {
-		if _, exists := networkMap[network]; !exists {
+	for _, n := range b {
+		if !networkMap[n] {
 			return false
 		}
 	}
@@ -304,14 +310,11 @@ func equalStringSlices(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	stringMap := make(map[string]struct{})
-	for _, str := range a {
-		stringMap[str] = struct{}{}
-	}
-	for _, str := range b {
-		if _, exists := stringMap[str]; !exists {
+	for i := range a {
+		if a[i] != b[i] {
 			return false
 		}
 	}
 	return true
 }
+
