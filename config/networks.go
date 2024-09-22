@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/pkg/errors"
 )
@@ -98,20 +99,20 @@ func Mainnet() (BaseConfig, error) {
 			GenesisTime: 1606824023,
 			GenesisRoot: genesisRoot,
 		},
-		Forks: Forks{
-			Genesis: Fork{
+		Forks: consensus_core.Forks{
+			Genesis: consensus_core.Fork{
 				Epoch:       0,
 				ForkVersion: []byte{0x00, 0x00, 0x00, 0x00}},
-			Altair: Fork{
+			Altair: consensus_core.Fork{
 				Epoch:       74240,
 				ForkVersion: []byte{0x01, 0x00, 0x00, 0x00}},
-			Bellatrix: Fork{
+			Bellatrix: consensus_core.Fork{
 				Epoch:       144896,
 				ForkVersion: []byte{0x02, 0x00, 0x00, 0x00}},
-			Capella: Fork{
+			Capella: consensus_core.Fork{
 				Epoch:       194048,
 				ForkVersion: []byte{0x03, 0x00, 0x00, 0x00}},
-			Deneb: Fork{
+			Deneb: consensus_core.Fork{
 				Epoch:       269568,
 				ForkVersion: []byte{0x04, 0x00, 0x00, 0x00}},
 		},
@@ -141,20 +142,20 @@ func Goerli() (BaseConfig, error) {
 			GenesisTime: 1616508000,
 			GenesisRoot: genesisRoot,
 		},
-		Forks: Forks{
-			Genesis: Fork{
+		Forks: consensus_core.Forks{
+			Genesis: consensus_core.Fork{
 				Epoch:       0,
 				ForkVersion: []byte{0x00, 0x10, 0x20, 0x00}},
-			Altair: Fork{
+			Altair: consensus_core.Fork{
 				Epoch:       36660,
 				ForkVersion: []byte{0x01, 0x10, 0x20, 0x00}},
-			Bellatrix: Fork{
+			Bellatrix: consensus_core.Fork{
 				Epoch:       112260,
 				ForkVersion: []byte{0x02, 0x10, 0x20, 0x00}},
-			Capella: Fork{
+			Capella: consensus_core.Fork{
 				Epoch:       162304,
 				ForkVersion: []byte{0x03, 0x10, 0x20, 0x00}},
-			Deneb: Fork{
+			Deneb: consensus_core.Fork{
 				Epoch:       231680,
 				ForkVersion: []byte{0x04, 0x10, 0x20, 0x00}},
 		},
@@ -184,20 +185,20 @@ func Sepolia() (BaseConfig, error) {
 			GenesisTime: 1655733600,
 			GenesisRoot: genesisRoot,
 		},
-		Forks: Forks{
-			Genesis: Fork{
+		Forks: consensus_core.Forks{
+			Genesis: consensus_core.Fork{
 				Epoch:       0,
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x69}},
-			Altair: Fork{
+			Altair: consensus_core.Fork{
 				Epoch:       50,
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x70}},
-			Bellatrix: Fork{
+			Bellatrix: consensus_core.Fork{
 				Epoch:       100,
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x71}},
-			Capella: Fork{
+			Capella: consensus_core.Fork{
 				Epoch:       56832,
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x72}},
-			Deneb: Fork{
+			Deneb: consensus_core.Fork{
 				Epoch:       132608,
 				ForkVersion: []byte{0x90, 0x00, 0x00, 0x73}},
 		},

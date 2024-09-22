@@ -200,6 +200,18 @@ type Bootstrap struct {
 	CurrentSyncCommitteeBranch []Bytes32
 }
 
+type Fork struct {
+	Epoch       uint64 `json:"epoch"`
+	ForkVersion []byte `json:"fork_version"`
+}
+type Forks struct {
+	Genesis   Fork `json:"genesis"`
+	Altair    Fork `json:"altair"`
+	Bellatrix Fork `json:"bellatrix"`
+	Capella   Fork `json:"capella"`
+	Deneb     Fork `json:"deneb"`
+}
+
 // ToBytes serializes the Header struct to a byte slice.
 func (h *Header) ToBytes() []byte {
 	var buf bytes.Buffer

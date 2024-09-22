@@ -3,10 +3,12 @@ package config
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -23,9 +25,9 @@ var (
 	defaultCheckpoint    = [32]byte{}
 )
 
-/////////////////////////////
-///// from_file() tests /////
-/////////////////////////////
+// ///////////////////////////
+// /// from_file() tests /////
+// ///////////////////////////
 func TestMainnetBaseConfig(t *testing.T) {
 	network := "MAINNET"
 	path := "./config.toml"
@@ -179,9 +181,9 @@ func createConfigFile(v *viper.Viper) {
 	}
 }
 
-//////////////////////////////////
-///// to_base_config() tests /////
-//////////////////////////////////
+// ////////////////////////////////
+// /// to_base_config() tests /////
+// ////////////////////////////////
 func TestReturnsCorrectBaseConfig(t *testing.T) {
 	config := Config{
 		ConsensusRpc:         consensusRpc,
@@ -189,7 +191,7 @@ func TestReturnsCorrectBaseConfig(t *testing.T) {
 		RpcPort:              &rpcPort,
 		DefaultCheckpoint:    defaultCheckpoint,
 		Chain:                ChainConfig{},
-		Forks:                Forks{},
+		Forks:                consensus_core.Forks{},
 		MaxCheckpointAge:     uint64(maxCheckpointAge),
 		DataDir:              &dataDirectory,
 		LoadExternalFallback: loadExternalFallback,
@@ -213,7 +215,7 @@ func TestReturnsCorrectDefaultValues(t *testing.T) {
 		ConsensusRpc:         consensusRpc,
 		DefaultCheckpoint:    defaultCheckpoint,
 		Chain:                ChainConfig{},
-		Forks:                Forks{},
+		Forks:                consensus_core.Forks{},
 		MaxCheckpointAge:     uint64(maxCheckpointAge),
 		DataDir:              &dataDirectory,
 		LoadExternalFallback: loadExternalFallback,

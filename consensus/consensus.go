@@ -21,6 +21,7 @@ import (
 	"github.com/BlocSoc-iitr/selene/config/checkpoints"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/consensus/rpc"
+	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/BlocSoc-iitr/selene/utils/bls"
 	geth "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -254,7 +255,7 @@ func (in *Inner) get_execution_payload(ctx context.Context, slot *uint64) (*cons
 		return nil, err
 	}
 
-	blockHash, err := TreeHashRoot(block.Body.ToBytes())
+	blockHash, err := utils.TreeHashRoot(block.Body.ToBytes())
 	if err != nil {
 		return nil, err
 	}
@@ -265,12 +266,12 @@ func (in *Inner) get_execution_payload(ctx context.Context, slot *uint64) (*cons
 	var errGettingBlockHash error
 
 	if *slot == latestSlot {
-		verifiedBlockHash, errGettingBlockHash = TreeHashRoot(in.Store.OptimisticHeader.ToBytes())
+		verifiedBlockHash, errGettingBlockHash = utils.TreeHashRoot(in.Store.OptimisticHeader.ToBytes())
 		if errGettingBlockHash != nil {
 			return nil, ErrPayloadNotFound
 		}
 	} else if *slot == finalizedSlot {
-		verifiedBlockHash, errGettingBlockHash = TreeHashRoot(in.Store.FinalizedHeader.ToBytes())
+		verifiedBlockHash, errGettingBlockHash = utils.TreeHashRoot(in.Store.FinalizedHeader.ToBytes())
 		if errGettingBlockHash != nil {
 			return nil, ErrPayloadNotFound
 		}
@@ -368,7 +369,7 @@ func (in *Inner) advance() error {
 	if in.Store.NextSyncCommitee == nil {
 		log.Printf("checking for sync committee update")
 
-		currentPeriod := CalcSyncPeriod(in.Store.FinalizedHeader.Slot)
+		currentPeriod := utils.CalcSyncPeriod(in.Store.FinalizedHeader.Slot)
 		updates, err := in.RPC.GetUpdates(currentPeriod, 1)
 		if err != nil {
 			return err
@@ -394,7 +395,7 @@ func (in *Inner) sync(checkpoint [32]byte) error {
 	in.bootstrap(checkpoint)
 
 	// Calculate the current sync period
-	currentPeriod := CalcSyncPeriod(in.Store.FinalizedHeader.Slot)
+	currentPeriod := utils.CalcSyncPeriod(in.Store.FinalizedHeader.Slot)
 
 	// Fetch updates
 	updates, err := in.RPC.GetUpdates(currentPeriod, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
@@ -520,7 +521,7 @@ func verify_bootstrap(checkpoint [32]byte, bootstrap consensus_core.Bootstrap) {
 		return
 	}
 
-	headerHash, err := TreeHashRoot(bootstrap.Header.ToBytes())
+	headerHash, err := utils.TreeHashRoot(bootstrap.Header.ToBytes())
 	if err != nil {
 		log.Println("failed to hash header")
 		return
@@ -544,7 +545,7 @@ func apply_bootstrap(store *LightClientStore, bootstrap consensus_core.Bootstrap
 
 }
 
-func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlot uint64, store *LightClientStore, genesisRoots []byte, forks config.Forks) error {
+func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlot uint64, store *LightClientStore, genesisRoots []byte, forks consensus_core.Forks) error {
 	{
 		bits := getBits(update.SyncAggregate.SyncCommitteeBits)
 		if bits == 0 {
@@ -560,8 +561,8 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 			return ErrInvalidTimestamp
 		}
 
-		storePeriod := CalcSyncPeriod(store.FinalizedHeader.Slot)
-		updateSigPeriod := CalcSyncPeriod(update.SignatureSlot)
+		storePeriod := utils.CalcSyncPeriod(store.FinalizedHeader.Slot)
+		updateSigPeriod := utils.CalcSyncPeriod(update.SignatureSlot)
 
 		var validPeriod bool
 		if store.NextSyncCommitee != nil {
@@ -574,7 +575,7 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 			return ErrInvalidPeriod
 		}
 
-		updateAttestedPeriod := CalcSyncPeriod(update.AttestedHeader.Slot)
+		updateAttestedPeriod := utils.CalcSyncPeriod(update.AttestedHeader.Slot)
 		updateHasNextCommittee := store.NextSyncCommitee == nil && update.NextSyncCommittee != nil && updateAttestedPeriod == storePeriod
 
 		if update.AttestedHeader.Slot <= store.FinalizedHeader.Slot && !updateHasNextCommittee {
@@ -606,13 +607,13 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		} else {
 			syncCommittee = in.Store.NextSyncCommitee
 		}
-		pks, err := GetParticipatingKeys(syncCommittee, update.SyncAggregate.SyncCommitteeBits)
+		pks, err := utils.GetParticipatingKeys(syncCommittee, update.SyncAggregate.SyncCommitteeBits)
 		if err != nil {
 			return fmt.Errorf("failed to get participating keys: %w", err)
 		}
 
-		forkVersion := CalculateForkVersion(&forks, update.SignatureSlot)
-		forkDataRoot := ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(in.Config.Chain.GenesisRoot))
+		forkVersion := utils.CalculateForkVersion(&forks, update.SignatureSlot)
+		forkDataRoot := utils.ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(in.Config.Chain.GenesisRoot))
 
 		if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate.SyncCommitteeSignature, forkDataRoot) {
 			return ErrInvalidSignature
@@ -667,13 +668,13 @@ func (in *Inner) apply_generic_update(store *LightClientStore, update *GenericUp
 		store.OptimisticHeader = update.AttestedHeader
 	}
 
-	updateAttestedPeriod := CalcSyncPeriod(update.AttestedHeader.Slot)
+	updateAttestedPeriod := utils.CalcSyncPeriod(update.AttestedHeader.Slot)
 
 	updateFinalizedSlot := uint64(0)
 	if update.FinalizedHeader != (consensus_core.Header{}) {
 		updateFinalizedSlot = update.FinalizedHeader.Slot
 	}
-	updateFinalizedPeriod := CalcSyncPeriod(updateFinalizedSlot)
+	updateFinalizedPeriod := utils.CalcSyncPeriod(updateFinalizedSlot)
 
 	updateHasFinalizedNextCommittee := in.Store.NextSyncCommitee == nil &&
 		in.has_sync_update(update) && in.has_finality_update(update) &&
@@ -692,7 +693,7 @@ func (in *Inner) apply_generic_update(store *LightClientStore, update *GenericUp
 
 	// Apply the update if conditions are met
 	if shouldApplyUpdate {
-		storePeriod := CalcSyncPeriod(store.FinalizedHeader.Slot)
+		storePeriod := utils.CalcSyncPeriod(store.FinalizedHeader.Slot)
 
 		// Sync committee update logic
 		if store.NextSyncCommitee == nil {
@@ -714,7 +715,7 @@ func (in *Inner) apply_generic_update(store *LightClientStore, update *GenericUp
 			}
 
 			if store.FinalizedHeader.Slot%32 == 0 {
-				checkpoint, err := TreeHashRoot(store.FinalizedHeader.ToBytes())
+				checkpoint, err := utils.TreeHashRoot(store.FinalizedHeader.ToBytes())
 				if err != nil {
 					return nil
 				}
@@ -824,7 +825,7 @@ func verifySyncCommitteeSignature(
 	}
 
 	// Compute headerRoot
-	headerRoot, err := TreeHashRoot(attestedHeader.ToBytes())
+	headerRoot, err := utils.TreeHashRoot(attestedHeader.ToBytes())
 	if err != nil {
 		return false
 	}
@@ -842,7 +843,7 @@ func verifySyncCommitteeSignature(
 		}
 	}
 
-	return isAggregateValid(*signature, signingRoot, g2Points)
+	return utils.IsAggregateValid(*signature, signingRoot, g2Points)
 }
 
 func ComputeCommitteeSignRoot(header consensus_core.Bytes32, fork consensus_core.Bytes32) consensus_core.Bytes32 {
@@ -850,10 +851,10 @@ func ComputeCommitteeSignRoot(header consensus_core.Bytes32, fork consensus_core
 	domainType := [4]byte{7, 0, 0, 0}
 
 	// Compute the domain
-	domain := ComputeDomain(domainType, fork)
+	domain := utils.ComputeDomain(domainType, fork)
 
 	// Compute and return the signing root
-	return ComputeSigningRoot(header, domain)
+	return utils.ComputeSigningRoot(header, domain)
 }
 func (in *Inner) Age(slot uint64) time.Duration {
 	expectedTime := slot*12 + in.Config.Chain.GenesisTime
@@ -879,27 +880,27 @@ func (in *Inner) is_valid_checkpoint(blockHashSlot uint64) bool {
 }
 
 func isFinalityProofValid(attestedHeader *consensus_core.Header, finalizedHeader *consensus_core.Header, finalityBranch []consensus_core.Bytes32) bool {
-	finalityBranchForProof, err := branchToNodes(finalityBranch)
+	finalityBranchForProof, err := utils.BranchToNodes(finalityBranch)
 	if err != nil {
 		return false
 	}
-	return isProofValid(attestedHeader, finalizedHeader.ToBytes(), finalityBranchForProof, 6, 41)
+	return utils.IsProofValid(attestedHeader, finalizedHeader.ToBytes(), finalityBranchForProof, 6, 41)
 }
 
 func isCurrentCommitteeProofValid(attestedHeader *consensus_core.Header, currentCommittee *consensus_core.SyncCommittee, currentCommitteeBranch []consensus_core.Bytes32) bool {
-	CurrentCommitteeForProof, err := branchToNodes(currentCommitteeBranch)
+	CurrentCommitteeForProof, err := utils.BranchToNodes(currentCommitteeBranch)
 	if err != nil {
 		return false
 	}
-	return isProofValid(attestedHeader, currentCommittee.ToBytes(), CurrentCommitteeForProof, 5, 22)
+	return utils.IsProofValid(attestedHeader, currentCommittee.ToBytes(), CurrentCommitteeForProof, 5, 22)
 }
 
 func isNextCommitteeProofValid(attestedHeader *consensus_core.Header, currentCommittee *consensus_core.SyncCommittee, currentCommitteeBranch []consensus_core.Bytes32) bool {
-	currentCommitteeBranchForProof, err := branchToNodes(currentCommitteeBranch)
+	currentCommitteeBranchForProof, err := utils.BranchToNodes(currentCommitteeBranch)
 	if err != nil {
 		return false
 	}
-	return isProofValid(attestedHeader, currentCommittee.ToBytes(), currentCommitteeBranchForProof, 5, 23)
+	return utils.IsProofValid(attestedHeader, currentCommittee.ToBytes(), currentCommitteeBranchForProof, 5, 23)
 }
 
 func PayloadToBlock(value *consensus_core.ExecutionPayload) (*common.Block, error) {
