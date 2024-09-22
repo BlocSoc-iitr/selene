@@ -1,9 +1,0 @@
-checkpoint = '0x85e6151a246e8fdba36db27a0c7678a575346272fe978c9281e13a8b26cdfa68'
-consensus_rpc = 'http://localhost:5052'
-data_dir = '/data'
-execution_rpc = 'http://localhost:8545'
-fallback = 'http://fallback.example.com'
-load_external_fallback = true
-max_checkpoint_age = 86400
-rpc_bind_ip = '127.0.0.1'
-rpc_port = 8080
