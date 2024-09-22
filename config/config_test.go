@@ -46,8 +46,8 @@ func TestMainnetBaseConfig(t *testing.T) {
 	if !reflect.DeepEqual(config.Chain, mainnetConfig.Chain) {
 		t.Errorf("Expected Chain to be %v, but got %v", mainnetConfig.Chain, config.Chain)
 	}
-	if !reflect.DeepEqual(consensus_core.Forks, mainnetConfig.Forks) {
-		t.Errorf("Expected Forks to be %v, but got %v", mainnetConfig.Forks, consensus_core.Forks)
+	if !reflect.DeepEqual(config.Forks, mainnetConfig.Forks) {
+		t.Errorf("Expected Forks to be %v, but got %v", mainnetConfig.Forks, config.Forks)
 	}
 	if *config.RpcBindIp != mainnetConfig.RpcBindIp {
 		t.Errorf("Expected RpcBindIP to be %s, but got %s", mainnetConfig.RpcBindIp, *config.RpcBindIp)
@@ -191,7 +191,7 @@ func TestReturnsCorrectBaseConfig(t *testing.T) {
 		RpcPort:              &rpcPort,
 		DefaultCheckpoint:    defaultCheckpoint,
 		Chain:                ChainConfig{},
-		Forks:                Forks{},
+		Forks:                consensus_core.Forks{},
 		MaxCheckpointAge:     uint64(maxCheckpointAge),
 		DataDir:              &dataDirectory,
 		LoadExternalFallback: loadExternalFallback,
@@ -203,8 +203,8 @@ func TestReturnsCorrectBaseConfig(t *testing.T) {
 	if !reflect.DeepEqual(baseConfig.Chain, config.Chain) {
 		t.Errorf("Expected Chain to be %v, got %v", config.Chain, baseConfig.Chain)
 	}
-	if !reflect.DeepEqual(baseConfig.Forks, consensus_core.Forks) {
-		t.Errorf("Expected Forks to be %v, got %v", consensus_core.Forks, baseConfig.Forks)
+	if !reflect.DeepEqual(baseConfig.Forks, config.Forks) {
+		t.Errorf("Expected Forks to be %v, got %v", config.Forks, baseConfig.Forks)
 	}
 	if baseConfig.MaxCheckpointAge != config.MaxCheckpointAge {
 		t.Errorf("Expected Max Checkpoint age to be %v, got %v", config.MaxCheckpointAge, baseConfig.MaxCheckpointAge)
@@ -215,7 +215,7 @@ func TestReturnsCorrectDefaultValues(t *testing.T) {
 		ConsensusRpc:         consensusRpc,
 		DefaultCheckpoint:    defaultCheckpoint,
 		Chain:                ChainConfig{},
-		Forks:                Forks{},
+		Forks:                consensus_core.Forks{},
 		MaxCheckpointAge:     uint64(maxCheckpointAge),
 		DataDir:              &dataDirectory,
 		LoadExternalFallback: loadExternalFallback,
