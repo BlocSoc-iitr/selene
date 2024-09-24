@@ -26,7 +26,7 @@ type Config struct {
 }
 
 // only if we are using CLI
-func (c Config) FromFile(configPath *string, network *string, cliConfig *CliConfig) Config {
+func (c Config) from_file(configPath *string, network *string, cliConfig *CliConfig) Config {
 	n := Network(*network)
 	baseConfig, err := n.BaseConfig(*network)
 	if err != nil {
@@ -118,7 +118,7 @@ func (c Config) FromFile(configPath *string, network *string, cliConfig *CliConf
 	}
 	return finalConfig
 }
-func (c Config) ToBaseConfig() BaseConfig {
+func (c Config) to_base_config() BaseConfig {
 	return BaseConfig{
 		RpcBindIp: func() string {
 			if c.RpcBindIp != nil {

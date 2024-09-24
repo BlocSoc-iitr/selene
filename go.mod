@@ -3,20 +3,15 @@ module github.com/BlocSoc-iitr/selene
 go 1.22.3
 
 require (
-	github.com/avast/retry-go v3.0.0+incompatible
-	github.com/consensys/gnark-crypto v0.12.1
 	github.com/ethereum/go-ethereum v1.14.8
 	github.com/holiman/uint256 v1.3.1
 	github.com/kilic/bls12-381 v0.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
-	github.com/wealdtech/go-merkletree v1.0.0
-	go.uber.org/zap v1.21.0
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -27,6 +22,7 @@ require (
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
+	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/crate-crypto/go-kzg-4844 v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
@@ -71,8 +67,6 @@ require (
 	github.com/supranational/blst v0.3.11 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/wealdtech/go-merkletree v1.0.0 // indirect
-	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
@@ -81,6 +75,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
