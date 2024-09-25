@@ -2,7 +2,6 @@ package execution
 import (
 	"sync"
 	"github.com/BlocSoc-iitr/selene/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 )
 type State struct {
@@ -118,7 +117,7 @@ func (s *State) GetBlockByHash(hash [32]byte) *common.Block {
 	}
 	return nil
 }
-func (s *State) GetTransaction(hash [32]byte) *types.Transaction {
+func (s *State) GetTransaction(hash [32]byte) *common.Transaction {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -131,7 +130,7 @@ func (s *State) GetTransaction(hash [32]byte) *types.Transaction {
 	}
 	return nil
 }
-func (s *State) GetTransactionByBlockAndIndex(blockHash [32]byte, index uint64) *types.Transaction {
+func (s *State) GetTransactionByBlockAndIndex(blockHash [32]byte, index uint64) *common.Transaction {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
