@@ -192,21 +192,15 @@ func TestGetBlock(t *testing.T) {
 			Message: consensus_core.BeaconBlock{
 				Slot: 4000,
 			},
-		},
-	}
-	blockJSON, _ := json.Marshal(mockBlock)
-	err = os.WriteFile(filepath.Join(blocksDir, "4000.json"), blockJSON, 0644)
-	if err != nil {
-		t.Fatalf("Failed to write mock block file: %v", err)
-	}
-	mockRpc := NewMockRpc(tempDir)
-	block, err := mockRpc.GetBlock(4000)
-	if err != nil {
-		t.Fatalf("GetBlock failed: %v", err)
-	}
-	if block.Slot != 4000 {
-		t.Errorf("Expected block slot to be 4000, got %d", block.Slot)
-	}
+		}
+		err := json.NewEncoder(w).Encode(response)
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+	nimbusRpc := NewNimbusRpc(server.URL)
+	optimisticUpdate, err := nimbusRpc.GetOptimisticUpdate()
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(3000), optimisticUpdate.SignatureSlot)
 }
 
 func TestChainId(t *testing.T) {
