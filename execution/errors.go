@@ -3,6 +3,8 @@ package execution
 import (
 	"fmt"
 
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
+	"github.com/BlocSoc-iitr/selene/consensus/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -55,31 +57,31 @@ func (e *ExecutionError) Error() string {
 }
 
 // Helper functions to create specific ExecutionError instances
-func NewInvalidAccountProofError(string string) error {
-	return &ExecutionError{"InvalidAccountProof", string}
+func NewInvalidAccountProofError(address types.Address) error {
+	return &ExecutionError{"InvalidAccountProof", address}
 }
 
-func NewInvalidStorageProofError(string string, slot [32]byte) error {
-	return &ExecutionError{"InvalidStorageProof", []interface{}{string, slot}}
+func NewInvalidStorageProofError(address types.Address, slot consensus_core.Bytes32) error {
+	return &ExecutionError{"InvalidStorageProof", []interface{}{address, slot}}
 }
 
-func NewCodeHashMismatchError(string string, found [32]byte, expected [32]byte) error {
-	return &ExecutionError{"CodeHashMismatch", []interface{}{string, found, expected}}
+func NewCodeHashMismatchError(address types.Address, found consensus_core.Bytes32, expected consensus_core.Bytes32) error {
+	return &ExecutionError{"CodeHashMismatch", []interface{}{address, found, expected}}
 }
 
-func NewReceiptRootMismatchError(tx [32]byte) error {
+func NewReceiptRootMismatchError(tx consensus_core.Bytes32) error {
 	return &ExecutionError{"ReceiptRootMismatch", tx}
 }
 
-func NewMissingTransactionError(tx [32]byte) error {
+func NewMissingTransactionError(tx consensus_core.Bytes32) error {
 	return &ExecutionError{"MissingTransaction", tx}
 }
 
-func NewNoReceiptForTransactionError(tx [32]byte) error {
+func NewNoReceiptForTransactionError(tx consensus_core.Bytes32) error {
 	return &ExecutionError{"NoReceiptForTransaction", tx}
 }
 
-func NewMissingLogError(tx [32]byte, index uint64) error {
+func NewMissingLogError(tx consensus_core.Bytes32, index uint64) error {
 	return &ExecutionError{"MissingLog", []interface{}{tx, index}}
 }
 
