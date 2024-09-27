@@ -34,18 +34,15 @@ func TestGetBootstrap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write mock bootstrap file: %v", err)
 	}
-
 	mockRpc := NewMockRpc(tempDir)
 	bootstrap, err := mockRpc.GetBootstrap([32]byte{})
 	if err != nil {
 		t.Fatalf("GetBootstrap failed: %v", err)
 	}
-
 	if bootstrap.Header.Slot != 1000 {
 		t.Errorf("Expected bootstrap slot to be 1000, got %d", bootstrap.Header.Slot)
 	}
 }
-
 func TestGetUpdates(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mock_rpc_test")
 	if err != nil {
@@ -85,13 +82,11 @@ func TestGetUpdates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write mock updates file: %v", err)
 	}
-
 	mockRpc := NewMockRpc(tempDir)
 	updates, err := mockRpc.GetUpdates(1, 2)
 	if err != nil {
 		t.Fatalf("GetUpdates failed: %v", err)
 	}
-
 	if len(updates) != 2 {
 		t.Errorf("Expected 2 updates, got %d", len(updates))
 	}
@@ -99,7 +94,6 @@ func TestGetUpdates(t *testing.T) {
 		t.Errorf("Unexpected update signature slots")
 	}
 }
-
 func TestGetFinalityUpdate(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mock_rpc_test")
 	if err != nil {
@@ -127,18 +121,15 @@ func TestGetFinalityUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write mock finality file: %v", err)
 	}
-
 	mockRpc := NewMockRpc(tempDir)
 	finality, err := mockRpc.GetFinalityUpdate()
 	if err != nil {
 		t.Fatalf("GetFinalityUpdate failed: %v", err)
 	}
-
 	if finality.FinalizedHeader.Slot != 2000 {
 		t.Errorf("Expected finality slot to be 2000, got %d", finality.FinalizedHeader.Slot)
 	}
 }
-
 func TestGetOptimisticUpdate(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mock_rpc_test")
 	if err != nil {
@@ -162,18 +153,15 @@ func TestGetOptimisticUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write mock optimistic file: %v", err)
 	}
-
 	mockRpc := NewMockRpc(tempDir)
 	optimistic, err := mockRpc.GetOptimisticUpdate()
 	if err != nil {
 		t.Fatalf("GetOptimisticUpdate failed: %v", err)
 	}
-
 	if optimistic.SignatureSlot != 3000 {
 		t.Errorf("Expected optimistic signature slot to be 3000, got %d", optimistic.SignatureSlot)
 	}
 }
-
 func TestGetBlock(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mock_rpc_test")
 	if err != nil {
@@ -192,17 +180,22 @@ func TestGetBlock(t *testing.T) {
 			Message: consensus_core.BeaconBlock{
 				Slot: 4000,
 			},
-		}
-		err := json.NewEncoder(w).Encode(response)
-		require.NoError(t, err)
-	}))
-	defer server.Close()
-	nimbusRpc := NewNimbusRpc(server.URL)
-	optimisticUpdate, err := nimbusRpc.GetOptimisticUpdate()
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(3000), optimisticUpdate.SignatureSlot)
+		},
+	}
+	blockJSON, _ := json.Marshal(mockBlock)
+	err = os.WriteFile(filepath.Join(blocksDir, "4000.json"), blockJSON, 0644)
+	if err != nil {
+		t.Fatalf("Failed to write mock block file: %v", err)
+	}
+	mockRpc := NewMockRpc(tempDir)
+	block, err := mockRpc.GetBlock(4000)
+	if err != nil {
+		t.Fatalf("GetBlock failed: %v", err)
+	}
+	if block.Slot != 4000 {
+		t.Errorf("Expected block slot to be 4000, got %d", block.Slot)
+	}
 }
-
 func TestChainId(t *testing.T) {
 	mockRpc := NewMockRpc("/tmp/testdata")
 	_, err := mockRpc.ChainId()
