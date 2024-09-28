@@ -1,10 +1,12 @@
 package execution
+
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+	"github.com/BlocSoc-iitr/selene/utils"
 )
 type Account struct {
 	Balance     *big.Int
@@ -22,35 +24,85 @@ type CallOpts struct {
 	Value    *big.Int        `json:"value,omitempty"`
 	Data     []byte          `json:"data,omitempty"`
 }
-func (c *CallOpts) MarshalJSON() ([]byte, error) {
-	type Alias CallOpts
-	return json.Marshal(&struct {
-		*Alias
-		Data string `json:"data,omitempty"`
-	}{
-		Alias: (*Alias)(c),
-		Data:  hex.EncodeToString(c.Data),
-	})
-}
-func (c *CallOpts) UnmarshalJSON(data []byte) error {
-	type Alias CallOpts
-	aux := &struct {
-		*Alias
-		Data string `json:"data,omitempty"`
-	}{
-		Alias: (*Alias)(c),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-	decodedData, err := hex.DecodeString(aux.Data)
-	if err != nil {
-		return err
-	}
-	c.Data = decodedData
-	return nil
-}
 func (c *CallOpts) String() string {
-	return fmt.Sprintf("CallOpts{From: %v, To: %v, Value: %v, Data: %s}",
-		c.From, c.To, c.Value, hex.EncodeToString(c.Data))
+	return fmt.Sprintf("CallOpts{From: %v, To: %v, Gas: %v, GasPrice: %v, Value: %v, Data: 0x%x}",
+		c.From, c.To, c.Gas, c.GasPrice, c.Value, c.Data)
+}
+
+func (c *CallOpts) Serialize() ([]byte, error) {
+    serialized := make(map[string]interface{})
+    v := reflect.ValueOf(*c)
+    t := v.Type()
+
+    for i := 0; i < v.NumField(); i++ {
+        field := v.Field(i)
+        fieldName := t.Field(i).Name
+
+        if !field.IsNil() {
+            var value interface{}
+            var err error
+
+            switch field.Interface().(type) {
+            case *common.Address:
+                value = utils.Address_to_hex_string(*field.Interface().(*common.Address))
+            case *big.Int:
+                value = utils.U64_to_hex_string(field.Interface().(*big.Int).Uint64())
+            case []byte:
+                value, err = utils.Bytes_serialize(field.Interface().([]byte))
+                if err != nil {
+                    return nil, fmt.Errorf("error serializing %s: %w", fieldName, err)
+                }
+            default:
+                return nil, fmt.Errorf("unsupported type for field %s", fieldName)
+            }
+
+            serialized[fieldName] = value
+        }
+    }
+
+    return json.Marshal(serialized)
+}
+
+func (c *CallOpts) Deserialize(data []byte) error {
+	var serialized map[string]string
+	if err := json.Unmarshal(data, &serialized); err != nil {
+		return err
+	}
+
+	v := reflect.ValueOf(c).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldName := t.Field(i).Name
+
+		if value, ok := serialized[fieldName]; ok {
+			switch field.Interface().(type) {
+			case *common.Address:
+				addressBytes, err := utils.Hex_str_to_bytes(value)
+				if err != nil {
+					return fmt.Errorf("error deserializing %s: %w", fieldName, err)
+				}
+				addr := common.BytesToAddress(addressBytes)
+				field.Set(reflect.ValueOf(&addr))
+			case *big.Int:
+				intBytes, err := utils.Hex_str_to_bytes(value)
+				if err != nil {
+					return fmt.Errorf("error deserializing %s: %w", fieldName, err)
+				}
+				bigInt := new(big.Int).SetBytes(intBytes)
+				field.Set(reflect.ValueOf(bigInt))
+			case []byte:
+				byteValue, err := utils.Bytes_deserialize([]byte(value))
+				if err != nil {
+					return fmt.Errorf("error deserializing %s: %w", fieldName, err)
+				}
+				field.SetBytes(byteValue)
+			default:
+				return fmt.Errorf("unsupported type for field %s", fieldName)
+			}
+		}
+	}
+
+	return nil
 }
