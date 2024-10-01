@@ -3,7 +3,6 @@ package consensus_core
 import (
 	"bytes"
 
-	"github.com/BlocSoc-iitr/selene/consensus/types"
 	"github.com/ugorji/go/codec"
 )
 
@@ -12,6 +11,7 @@ type BLSPubKey [48]byte
 type Address [20]byte
 type LogsBloom [256]byte
 type SignatureBytes [96]byte
+type Transaction = [1073741824]byte //1073741824
 
 type BeaconBlock struct {
 	Slot          uint64
@@ -125,10 +125,10 @@ type ExecutionPayload struct {
 	ExtraData     [32]byte
 	BaseFeePerGas uint64
 	BlockHash     Bytes32
-	Transactions  []types.Transaction `ssz-max:"1048576"`
-	Withdrawals   []types.Withdrawal  `ssz-max:"16"`
-	BlobGasUsed   *uint64             // Deneb-specific field, use pointer for optionality
-	ExcessBlobGas *uint64             // Deneb-specific field, use pointer for optionality
+	Transactions  []Transaction `ssz-max:"1048576"`
+	Withdrawals   []Withdrawal  `ssz-max:"16"`
+	BlobGasUsed   *uint64       // Deneb-specific field, use pointer for optionality
+	ExcessBlobGas *uint64       // Deneb-specific field, use pointer for optionality
 }
 
 type SignedBlsToExecutionChange struct {
