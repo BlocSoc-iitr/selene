@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
-
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,7 +24,6 @@ type ExecutionClient struct {
 type ExecutionRpc interface{}
 
 // State struct (assuming it has necessary methods)
-type State struct{}
 
 // New creates a new ExecutionClient
 func (e *ExecutionClient) New(rpc string, state State) (*ExecutionClient, error) {
