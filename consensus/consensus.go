@@ -459,7 +459,6 @@ func (in *Inner) sync(checkpoint [32]byte) error {
 		// Apply updates
 		for _, update := range updates {
 			if err := in.verify_update(&update); err != nil {
-
 				errorChan <- err
 				return
 			}
@@ -562,7 +561,6 @@ func (in *Inner) bootstrap(checkpoint [32]byte) {
 	bootstrapChan := make(chan consensus_core.Bootstrap, 1)
 	go func() {
 		bootstrap, errInBootstrap := in.RPC.GetBootstrap(checkpoint)
-
 		if errInBootstrap != nil {
 			log.Printf("failed to fetch bootstrap: %v", errInBootstrap)
 			errorChan <- errInBootstrap
