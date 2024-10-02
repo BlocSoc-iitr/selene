@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
@@ -13,8 +14,8 @@ import (
 type EIP1186AccountProofResponse struct {
 	Nonce       uint64
 	Balance     *big.Int
-	StorageHash [32]byte
-	CodeHash    [32]byte
+	StorageHash common.Hash
+	CodeHash    common.Hash
 }
 
 func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, error) {
@@ -110,7 +111,7 @@ func isEmptyValue(value []byte) bool {
 		CodeHash:    [32]byte{0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0, 0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70},
 	}
 
-	encodedEmptyAccount, _ := rlp.EncodeToBytes(emptyAccount)
+	encodedEmptyAccount, _ := rlp.EncodeToBytes(&emptyAccount)
 
 	isEmptySlot := len(value) == 1 && value[0] == 0x80
 	isEmptyAccount := bytes.Equal(value, encodedEmptyAccount)
@@ -122,7 +123,7 @@ func sharedPrefixLength(path []byte, pathOffset int, nodePath []byte) int {
 	skipLength := skipLength(nodePath)
 
 	len1 := min(len(nodePath)*2-skipLength, len(path)*2-pathOffset)
-	prefixLen := 0
+	var prefixLen int = 0
 
 	for i := 0; i < len1; i++ {
 		pathNibble := getNibble(path, i+pathOffset)
@@ -174,7 +175,7 @@ func EncodeAccount(proof *EIP1186AccountProofResponse) ([]byte, error) {
 		CodeHash:    proof.CodeHash,
 	}
 
-	return rlp.EncodeToBytes(account)
+	return rlp.EncodeToBytes(&account)
 }
 
 // Make a generic function for it
