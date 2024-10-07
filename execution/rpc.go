@@ -4,37 +4,15 @@ import (
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
-    "github.com/BlocSoc-iitr/selene/execution"
 )
-type FeeHistory struct {
-    BaseFeePerGas []hexutil.Big   
-    GasUsedRatio  []float64       
-    OldestBlock   *hexutil.Big    
-    Reward        [][]hexutil.Big 
-}
-//defined storage proof	and EIP1186ProofResponse structs
-type StorageProof struct {
-    Key   common.Hash   
-    Proof []hexutil.Bytes 
-    Value *uint256.Int      
-}
-type EIP1186ProofResponse struct {
-    Address      seleneCommon.Address  
-    Balance      *uint256.Int       
-    CodeHash     common.Hash     
-    Nonce        uint64           
-    StorageHash  common.Hash      
-    AccountProof []hexutil.Bytes  
-    StorageProof []StorageProof  
-}
+
 
 type ExecutionRpc interface{
     New (rpc *string) (*ExecutionRpc, error)
 	GetProof(address *seleneCommon.Address, slots *[]common.Hash,block uint64)  (EIP1186ProofResponse, error)
-	CreateAccessList(opts *execution.CallOpts,block seleneCommon.BlockTag) (types.AccessList, error)
+	CreateAccessList(opts CallOpts,block seleneCommon.BlockTag) (types.AccessList, error)
 	GetCode(address *seleneCommon.Address, block uint64) ([]byte, error)
 	SendRawTransaction(bytes *[]byte) (common.Hash, error)
 	GetTransactionReceipt(tx_hash *common.Hash) (types.Receipt, error)

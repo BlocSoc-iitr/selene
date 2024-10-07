@@ -7,7 +7,31 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"github.com/BlocSoc-iitr/selene/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/holiman/uint256"
+	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 )
+type FeeHistory struct {
+    BaseFeePerGas []hexutil.Big   
+    GasUsedRatio  []float64       
+    OldestBlock   *hexutil.Big    
+    Reward        [][]hexutil.Big 
+}
+//defined storage proof	and EIP1186ProofResponse structs
+type StorageProof struct {
+    Key   common.Hash   
+    Proof []hexutil.Bytes 
+    Value *uint256.Int      
+}
+type EIP1186ProofResponse struct {
+    Address      seleneCommon.Address  
+    Balance      *uint256.Int       
+    CodeHash     common.Hash     
+    Nonce        uint64           
+    StorageHash  common.Hash      
+    AccountProof []hexutil.Bytes  
+    StorageProof []StorageProof  
+}
 type Account struct {
 	Balance     *big.Int
 	Nonce       uint64
