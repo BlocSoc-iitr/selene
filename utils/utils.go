@@ -2,23 +2,21 @@ package utils
 
 import (
 	"encoding/hex"
-
+	"net/url"
+	"strconv"
 	"strings"
 
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/beacon/merkle"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
-	"github.com/BlocSoc-iitr/selene/utils/bls"
+	consensus_core "github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 
-	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/pkg/errors"
-	merkletree "github.com/wealdtech/go-merkletree"
+	beacon "github.com/ethereum/go-ethereum/beacon/types"
 )
 
 // if we need to export the functions , just make their first letter capitalised
@@ -32,6 +30,17 @@ func Hex_str_to_bytes(s string) ([]byte, error) {
 	}
 
 	return bytesArray, nil
+}
+
+func Hex_str_to_Bytes32(s string) (consensus_core.Bytes32, error) {
+	bytesArray, err := Hex_str_to_bytes(s)
+	if err != nil {
+		return consensus_core.Bytes32{}, err
+	}
+
+	var bytes32 consensus_core.Bytes32
+	copy(bytes32[:], bytesArray)
+	return bytes32, nil
 }
 
 func Address_to_hex_string(addr common.Address) string {
@@ -60,37 +69,12 @@ func Bytes_serialize(bytes []byte) ([]byte, error) {
 	return json.Marshal(hexString)
 }
 
-// TreeHashRoot computes the Merkle root from the provided leaves in a flat []byte slice.
-// TreeHashRoot calculates the root hash from the input data.
-func TreeHashRoot(data []byte) ([]byte, error) {
-	// Convert the input data into a slice of leaves
-	leaves, err := bytesToLeaves(data)
+func Str_to_uint64(s string) (uint64, error) {
+	num, err := strconv.ParseUint(s, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("error converting bytes to leaves: %w", err)
+		return 0, err
 	}
-
-	// Create the Merkle tree using the leaves
-	tree, errorCreatingMerkleTree := merkletree.New(leaves)
-	if errorCreatingMerkleTree != nil {
-		return nil, fmt.Errorf("error creating Merkle tree: %w", err)
-	}
-
-	// Fetch the root hash of the tree
-	root := tree.Root()
-	if root == nil {
-		return nil, errors.New("failed to calculate the Merkle root: root is nil")
-	}
-
-	return root, nil
-}
-
-func bytesToLeaves(data []byte) ([][]byte, error) {
-	var leaves [][]byte
-	if err := json.Unmarshal(data, &leaves); err != nil {
-		return nil, err
-	}
-
-	return leaves, nil
+	return num, nil
 }
 
 func CalcSyncPeriod(slot uint64) uint64 {
@@ -99,72 +83,25 @@ func CalcSyncPeriod(slot uint64) uint64 {
 }
 
 // isAggregateValid checks if the provided signature is valid for the given message and public keys.
-func IsAggregateValid(sigBytes consensus_core.SignatureBytes, msg [32]byte, pks []*bls.G2Point) bool {
-	var sigInBytes [96]byte
-	copy(sigInBytes[:], sigBytes[:])
-	// Deserialize the signature from bytes
-	var sig bls12381.G1Affine
-	if err := sig.Unmarshal(sigInBytes[:]); err != nil {
-		return false
-	}
-
-	// Map the message to a point on the curve
-	msgPoint := bls.MapToCurve(msg)
-
-	// Aggregate the public keys
-	aggPubKey := bls.AggregatePublicKeys(pks)
-
-	// Prepare the pairing check inputs
-	P := [2]bls12381.G1Affine{*msgPoint, sig}
-	Q := [2]bls12381.G2Affine{*aggPubKey.G2Affine, *bls.GetG2Generator()}
-
-	// Perform the pairing check
-	ok, err := bls12381.PairingCheck(P[:], Q[:])
-	if err != nil {
-		return false
-	}
-	return ok
-}
+//NO NEED OF THIS FUNCTION HERE AS IT IS NOW DIRECTLY IMPORTED FROM GETH IN CONSENSUS
 
 func IsProofValid(
 	attestedHeader *consensus_core.Header,
-	leafObject []byte, // Single byte slice of the leaf object
-	branch [][]byte, // Slice of byte slices for the branch
+	leafObject common.Hash, // Single byte slice of the leaf object
+	branch []consensus_core.Bytes32, // Slice of byte slices for the branch
 	depth, index int, // Depth of the Merkle proof and index of the leaf
 ) bool {
-	// If the branch length is not equal to the depth, return false
-	if len(branch) != depth {
+	var branchInMerkle merkle.Values
+	for _, node := range branch {
+		branchInMerkle = append(branchInMerkle, merkle.Value(node))
+	}
+	fmt.Print(attestedHeader.StateRoot)
+	err := merkle.VerifyProof(common.Hash(attestedHeader.StateRoot), uint64(index), branchInMerkle, merkle.Value(leafObject))
+	if err != nil {
+		log.Println("Error in verifying Merkle proof:", err)
 		return false
 	}
-
-	// Initialize the derived root as the leaf object's hash
-	derivedRoot, errFetchingTreeHashRoot := TreeHashRoot(leafObject)
-
-	if errFetchingTreeHashRoot != nil {
-		fmt.Printf("Error fetching tree hash root: %v", errFetchingTreeHashRoot)
-		return false
-	}
-
-	// Iterate over the proof's hashes
-	for i, hash := range branch {
-		hasher := sha256.New()
-
-		// Use the index to determine how to combine the hashes
-		if (index>>i)&1 == 1 {
-			// If index is odd, hash node || derivedRoot
-			hasher.Write(hash)
-			hasher.Write(derivedRoot)
-		} else {
-			// If index is even, hash derivedRoot || node
-			hasher.Write(derivedRoot)
-			hasher.Write(hash)
-		}
-		// Update derivedRoot for the next level
-		derivedRoot = hasher.Sum(nil)
-	}
-
-	// Compare the final derived root with the attested header's state root
-	return bytes.Equal(derivedRoot, attestedHeader.StateRoot[:])
+	return true
 }
 
 func CalculateForkVersion(forks *consensus_core.Forks, slot uint64) [4]byte {
@@ -184,17 +121,19 @@ func CalculateForkVersion(forks *consensus_core.Forks, slot uint64) [4]byte {
 	}
 }
 
+// computed not as helios but as per go-ethereum/beacon/consensus.go
 func ComputeForkDataRoot(currentVersion [4]byte, genesisValidatorRoot consensus_core.Bytes32) consensus_core.Bytes32 {
-	forkData := ForkData{
-		CurrentVersion:       currentVersion,
-		GenesisValidatorRoot: genesisValidatorRoot,
-	}
+	var (
+		hasher        = sha256.New()
+		forkVersion32 merkle.Value
+		forkDataRoot  merkle.Value
+	)
+	copy(forkVersion32[:], currentVersion[:])
+	hasher.Write(forkVersion32[:])
+	hasher.Write(genesisValidatorRoot[:])
+	hasher.Sum(forkDataRoot[:0])
 
-	hash, err := TreeHashRoot(forkData.ToBytes())
-	if err != nil {
-		return consensus_core.Bytes32{}
-	}
-	return consensus_core.Bytes32(hash)
+	return consensus_core.Bytes32(forkDataRoot)
 }
 
 // GetParticipatingKeys retrieves the participating public keys from the committee based on the bitfield represented as a byte array.
@@ -222,18 +161,21 @@ func GetParticipatingKeys(committee *consensus_core.SyncCommittee, bitfield [64]
 	return pks, nil
 }
 
-func ComputeSigningRoot(objectRoot, domain consensus_core.Bytes32) consensus_core.Bytes32 {
-	signingData := SigningData{
-		ObjectRoot: objectRoot,
-		Domain:     domain,
-	}
-	hash, err := TreeHashRoot(signingData.ToBytes())
-	if err != nil {
-		return consensus_core.Bytes32{}
-	}
-	return consensus_core.Bytes32(hash)
+// implemented as per go-ethereum/beacon/types/config.go
+func ComputeSigningRoot(header *beacon.Header, domain consensus_core.Bytes32) consensus_core.Bytes32 {
+	var (
+		signingRoot common.Hash
+		headerHash  = header.Hash()
+		hasher      = sha256.New()
+	)
+	hasher.Write(headerHash[:])
+	hasher.Write(domain[:])
+	hasher.Sum(signingRoot[:0])
+
+	return consensus_core.Bytes32(signingRoot.Bytes())
 }
 
+// implemented as per go-ethereum/beacon/types/config.go
 func ComputeDomain(domainType [4]byte, forkDataRoot consensus_core.Bytes32) consensus_core.Bytes32 {
 	data := append(domainType[:], forkDataRoot[:28]...)
 	return sha256.Sum256(data)
@@ -278,4 +220,8 @@ func BranchToNodes(branch []consensus_core.Bytes32) ([][]byte, error) {
 		nodes[i] = Bytes32ToNode(b32)
 	}
 	return nodes, nil
+}
+func IsURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
