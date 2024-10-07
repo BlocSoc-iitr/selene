@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc" 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
+	"github.com/BlocSoc-iitr/selene/execution"
 	"strconv"
 )
 
@@ -50,7 +51,7 @@ func (h *HttpRpc) GetProof(address *common.Address, slots *[]common.Hash, block 
 	return result.proof, nil
 }
 
-func (h *HttpRpc) CreateAccessList(opts *CallOpts, block seleneCommon.BlockTag) (types.AccessList, error) {
+func (h *HttpRpc) CreateAccessList(opts *execution.CallOpts, block seleneCommon.BlockTag) (types.AccessList, error) {
 	resultChan := make(chan struct {
 		accessList types.AccessList
 		err        error

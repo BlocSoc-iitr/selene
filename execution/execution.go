@@ -3,6 +3,9 @@ package execution
 import (
 	"bytes"
 	"fmt"
+	"math/big"
+
+	"errors"
 
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/BlocSoc-iitr/selene/utils"
@@ -12,42 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
-	"errors"
 )
-
-// temporary implementation of the State struct and its methods
-type State struct {
-}
-func (s *State) GetBlock(tag seleneCommon.BlockTag) (seleneCommon.Block, error) {
-	return seleneCommon.Block{}, nil
-}
-func (s *State) GetBlockByHash(hash common.Hash) (seleneCommon.Block, error) {
-	return seleneCommon.Block{}, nil
-}
-func (s *State) GetTransactionByBlockHashAndIndex(blockHash common.Hash, index uint64) (seleneCommon.Transaction, error) {
-	return seleneCommon.Transaction{}, nil
-}
-func (s *State) GetTransaction(hash common.Hash) (seleneCommon.Transaction, error) {
-	return seleneCommon.Transaction{}, nil
-}
-func (s *State) GetTransactionReceipt(txHash common.Hash) (types.Receipt, error) {
-	return types.Receipt{}, nil
-}
-func (s *State) LatestBlockNumber() (*uint256.Int, error) {
-	return nil, nil
-}
-// temporary implementation of the Account Struct
-type Account struct {
-	Balance     uint256.Int
-	Nonce       uint64
-	Code        []byte
-	CodeHash    common.Hash
-	StorageHash common.Hash
-	Slots       map[common.Hash]*uint256.Int
-}
-
-
-
 const MAX_SUPPORTED_LOGS_NUMBER = 5
 const KECCAK_EMPTY = "0x" 
 
@@ -90,10 +58,7 @@ func (e *ExecutionClient) CheckRpc(chainID uint64) error {
 }
 // GetAccount retrieves the account information
 func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots common.Hash, tag seleneCommon.BlockTag) (Account, error) { //Account from execution/types.go
-	block, err := e.state.GetBlock(tag)
-	if err != nil {
-		return Account{}, seleneCommon.NewBlockNotFoundError(tag) 
-	}
+	block := e.state.GetBlock(tag)
 	proof, err := e.Rpc.GetProof(address, &[]common.Hash{slots}, block.Number) 
 
 	accountPath := crypto.Keccak256(address.Addr[:])
@@ -110,7 +75,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots common
 		return Account{}, NewInvalidAccountProofError(address.Addr)
 	}
 	// modify 
-	slotMap := make(map[common.Hash]*uint256.Int)
+	slotMap := make(map[common.Hash]*big.Int)
 	for _, storageProof := range proof.StorageProof {
     	key, err := utils.Hex_str_to_bytes(storageProof.Key.Hex())
     	if err != nil {
@@ -137,7 +102,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots common
 		if !isValid {
 			return Account{}, fmt.Errorf("invalid storage proof for address: %v, key: %v", *address, storageProof.Key)
 		}
-		slotMap[storageProof.Key] = storageProof.Value
+		slotMap[storageProof.Key] = storageProof.Value.ToBig()
 	}
 	var code []byte
 	if bytes.Equal(proof.CodeHash.Bytes(), crypto.Keccak256([]byte(KECCAK_EMPTY))) {
@@ -154,7 +119,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots common
    		}
 	}
 	account := Account{
-		Balance:     *proof.Balance,
+		Balance:     proof.Balance.ToBig(),
 		Nonce:       proof.Nonce,
 		Code:        code,
 		CodeHash:    proof.CodeHash,
@@ -178,12 +143,8 @@ func (e *ExecutionClient) GetBlock(tag seleneCommon.BlockTag,full_tx bool)(selen
 	blockChan := make(chan seleneCommon.Block)
     errChan := make(chan error)
     go func() {
-        block, err := e.state.GetBlock(tag)
-        if err != nil {
-			errChan <- seleneCommon.BlockNotFoundError{Block: tag}
-            return
-        }
-        blockChan <- block
+        block:= e.state.GetBlock(tag)
+        blockChan <- *block
     }()
     select {
     case block := <-blockChan:
@@ -199,12 +160,8 @@ func (e *ExecutionClient) GetBlockByHash(hash common.Hash,full_tx bool) (seleneC
 	blockChan := make(chan seleneCommon.Block)
     errChan := make(chan error)
     go func() {
-        block, err := e.state.GetBlockByHash(hash)
-        if err != nil {
-			errChan <- err
-            return
-        }
-        blockChan <- block
+        block := e.state.GetBlockByHash(hash)
+        blockChan <- *block
     }()
     select {
     case block := <-blockChan:
@@ -220,12 +177,8 @@ func (e *ExecutionClient) GetTransactionByBlockHashAndIndex(blockHash common.Has
 	txChan := make(chan seleneCommon.Transaction)
 	errChan := make(chan error)
 	go func() {
-		tx, err := e.state.GetTransactionByBlockHashAndIndex(blockHash,index)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		txChan <- tx
+		tx:= e.state.GetTransactionByBlockAndIndex(blockHash,index)
+		txChan <- *tx
 	}()
 	select {
 	case tx := <-txChan:
@@ -240,7 +193,7 @@ func (e *ExecutionClient) GetTransactionReceipt(txHash common.Hash) (types.Recei
 	errChan := make(chan error)
 	// var receipt types.Receipt
 	go func() {
-		receipt, err := e.state.GetTransactionReceipt(txHash)
+		receipt, err := e.Rpc.GetTransactionReceipt(&txHash)
 		if err != nil {
 			errChan <- err
 			return
@@ -253,12 +206,8 @@ func (e *ExecutionClient) GetTransactionReceipt(txHash common.Hash) (types.Recei
 		blockChan := make(chan seleneCommon.Block)
     	errChan := make(chan error)
     	go func() {
-			block, err := e.state.GetBlock(seleneCommon.BlockTag{Number: blocknumber.Uint64()})
-			if err != nil {
-				errChan <- seleneCommon.BlockNotFoundError{Block: seleneCommon.BlockTag{Number: blocknumber.Uint64()}}
-				return
-			}
-			blockChan <- block
+			block := e.state.GetBlock(seleneCommon.BlockTag{Number: blocknumber.Uint64()})
+			blockChan <- *block
     	}()
     	select {
     	case block := <-blockChan:
@@ -316,12 +265,8 @@ func (e *ExecutionClient) GetTransaction(hash common.Hash) (seleneCommon.Transac
     txChan := make(chan seleneCommon.Transaction)
     errChan := make(chan error)
     go func() {
-        tx, err := e.state.GetTransaction(hash)
-        if err != nil {
-            errChan <- err
-            return
-        }
-        txChan <- tx
+        tx := e.state.GetTransaction(hash)
+        txChan <- *tx
     }()
     select {
     case tx := <-txChan:
@@ -332,13 +277,10 @@ func (e *ExecutionClient) GetTransaction(hash common.Hash) (seleneCommon.Transac
 }
 func (e *ExecutionClient) GetLogs(filter ethereum.FilterQuery) ([]types.Log, error) {
 	if filter.ToBlock == nil && filter.BlockHash == nil {
-		block, err := e.state.LatestBlockNumber()
-		if err != nil {
-			return nil, err
-		}
-		filter.ToBlock = block.ToBig()
+		block := e.state.LatestBlockNumber()
+		filter.ToBlock = new(big.Int).SetUint64(*block)
 		if filter.FromBlock == nil {
-			filter.FromBlock = block.ToBig()
+			filter.FromBlock = new(big.Int).SetUint64(*block)
 		}
 	}
 	logsChan := make(chan []types.Log)
@@ -420,13 +362,10 @@ func (e *ExecutionClient) UninstallFilter(filterID *uint256.Int) (bool, error) {
 }
 func (e *ExecutionClient) GetNewFilter(filter ethereum.FilterQuery) (uint256.Int, error) {
 	if filter.ToBlock == nil && filter.BlockHash == nil {
-		block, err := e.state.LatestBlockNumber()
-		if err != nil {
-			return uint256.Int{}, err
-		}
-		filter.ToBlock = block.ToBig()
+		block:= e.state.LatestBlockNumber()
+		filter.ToBlock = new(big.Int).SetUint64(*block)
 		if filter.FromBlock == nil {
-			filter.FromBlock = block.ToBig()
+			filter.FromBlock = new(big.Int).SetUint64(*block)
 		}
 	}
 	filterIDChan := make(chan uint256.Int)
