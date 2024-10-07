@@ -6,7 +6,6 @@ package consensus
 // uses common for datatypes
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -21,12 +20,15 @@ import (
 	"github.com/BlocSoc-iitr/selene/config/checkpoints"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/BlocSoc-iitr/selene/consensus/rpc"
+
 	"github.com/BlocSoc-iitr/selene/utils"
-	"github.com/BlocSoc-iitr/selene/utils/bls"
+	beacon "github.com/ethereum/go-ethereum/beacon/types"
 	geth "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
+	bls "github.com/protolambda/bls12-381-util"
 )
 
 // Error definitions
@@ -181,48 +183,72 @@ func (con ConsensusClient) Expected_current_slot() uint64 {
 }
 
 func sync_fallback(inner *Inner, fallback *string) error {
-	cf, err := (&checkpoints.CheckpointFallback{}).FetchLatestCheckpointFromApi(*fallback)
-	if err != nil {
-		return errors.Wrap(err, "failed to fetch checkpoint from API")
-	}
-	return inner.sync(cf)
+	// Create a buffered channel to receive any errors from the goroutine
+	errorChan := make(chan error, 1)
 
+	go func() {
+		// Attempt to fetch the latest checkpoint from the API
+		cf, err := (&checkpoints.CheckpointFallback{}).FetchLatestCheckpointFromApi(*fallback)
+		if err != nil {
+
+			errorChan <- err
+			return
+		}
+
+		if err := inner.sync(cf); err != nil {
+
+			errorChan <- err
+			return
+		}
+
+		errorChan <- nil
+	}()
+
+	return <-errorChan
 }
+
 func sync_all_fallback(inner *Inner, chainID uint64) error {
 	var n config.Network
 	network, err := n.ChainID(chainID)
 	if err != nil {
 		return err
 	}
+	errorChan := make(chan error, 1)
 
-	ch := checkpoints.CheckpointFallback{}
+	go func() {
 
-	checkpointFallback, errWhileCheckpoint := ch.Build()
-	if errWhileCheckpoint != nil {
-		return err
-	}
+		ch := checkpoints.CheckpointFallback{}
 
-	chainId := network.Chain.ChainID
-	var networkName config.Network
-	if chainId == 1 {
-		networkName = config.MAINNET
-	} else if chainId == 5 {
-		networkName = config.GOERLI
-	} else if chainId == 11155111 {
-		networkName = config.SEPOLIA
-	} else {
-		return errors.New("chain id not recognized")
-	}
+		checkpointFallback, errWhileCheckpoint := ch.Build()
+		if errWhileCheckpoint != nil {
+			errorChan <- errWhileCheckpoint
+			return
+		}
 
-	// Fetch the latest checkpoint from the network
-	checkpoint := checkpointFallback.FetchLatestCheckpoint(networkName)
+		chainId := network.Chain.ChainID
+		var networkName config.Network
+		if chainId == 1 {
+			networkName = config.MAINNET
+		} else if chainId == 5 {
+			networkName = config.GOERLI
+		} else if chainId == 11155111 {
+			networkName = config.SEPOLIA
+		} else {
+			errorChan <- errors.New("chain id not recognized")
+			return
+		}
 
-	// Sync using the inner struct's sync method
-	if err := inner.sync(checkpoint); err != nil {
-		return err
-	}
+		// Fetch the latest checkpoint from the network
+		checkpoint := checkpointFallback.FetchLatestCheckpoint(networkName)
 
-	return nil
+		// Sync using the inner struct's sync method
+		if err := inner.sync(checkpoint); err != nil {
+			errorChan <- err
+		}
+
+		errorChan <- nil
+	}()
+	return <-errorChan
 }
 
 func (in *Inner) New(rpcURL string, blockSend chan common.Block, finalizedBlockSend chan *common.Block, checkpointSend chan *[]byte, config *config.Config) *Inner {
@@ -240,47 +266,60 @@ func (in *Inner) New(rpcURL string, blockSend chan common.Block, finalizedBlockS
 
 }
 func (in *Inner) Check_rpc() error {
-	chainID, err := in.RPC.ChainId()
-	if err != nil {
-		return err
-	}
-	if chainID != in.Config.Chain.ChainID {
-		return ErrIncorrectRpcNetwork
-	}
-	return nil
+	errorChan := make(chan error, 1)
+
+	go func() {
+		chainID, err := in.RPC.ChainId()
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		if chainID != in.Config.Chain.ChainID {
+			errorChan <- ErrIncorrectRpcNetwork
+			return
+		}
+		errorChan <- nil
+	}()
+	return <-errorChan
 }
-func (in *Inner) get_execution_payload(ctx context.Context, slot *uint64) (*consensus_core.ExecutionPayload, error) {
-	block, err := in.RPC.GetBlock(*slot)
-	if err != nil {
+func (in *Inner) get_execution_payload(slot *uint64) (*consensus_core.ExecutionPayload, error) {
+	errorChan := make(chan error, 1)
+	blockChan := make(chan consensus_core.BeaconBlock, 1)
+	go func() {
+		var err error
+		block, err := in.RPC.GetBlock(*slot)
+		if err != nil {
+			errorChan <- err
+		}
+		errorChan <- nil
+		blockChan <- block
+	}()
+
+	if err := <-errorChan; err != nil {
 		return nil, err
 	}
 
-	blockHash, err := utils.TreeHashRoot(block.Body.ToBytes())
+	block := <-blockChan
+	Gethblock, err := beacon.BlockFromJSON("capella", block.Body.Hash)
 	if err != nil {
 		return nil, err
 	}
+	blockHash := Gethblock.Root()
 	latestSlot := in.Store.OptimisticHeader.Slot
 	finalizedSlot := in.Store.FinalizedHeader.Slot
 
-	var verifiedBlockHash []byte
-	var errGettingBlockHash error
+	var verifiedBlockHash geth.Hash
 
 	if *slot == latestSlot {
-		verifiedBlockHash, errGettingBlockHash = utils.TreeHashRoot(in.Store.OptimisticHeader.ToBytes())
-		if errGettingBlockHash != nil {
-			return nil, ErrPayloadNotFound
-		}
+		verifiedBlockHash = toGethHeader(&in.Store.OptimisticHeader).Hash()
 	} else if *slot == finalizedSlot {
-		verifiedBlockHash, errGettingBlockHash = utils.TreeHashRoot(in.Store.FinalizedHeader.ToBytes())
-		if errGettingBlockHash != nil {
-			return nil, ErrPayloadNotFound
-		}
+		verifiedBlockHash = toGethHeader(&in.Store.FinalizedHeader).Hash()
 	} else {
 		return nil, ErrPayloadNotFound
 	}
 
 	// Compare the hashes
-	if !bytes.Equal(verifiedBlockHash, blockHash) {
+	if !bytes.Equal(verifiedBlockHash[:], blockHash.Bytes()) {
 		return nil, fmt.Errorf("%w: expected %v but got %v", ErrInvalidHeaderHash, verifiedBlockHash, blockHash)
 	}
 
@@ -288,7 +327,7 @@ func (in *Inner) get_execution_payload(ctx context.Context, slot *uint64) (*cons
 	return &payload, nil
 }
 
-func (in *Inner) Get_payloads(ctx context.Context, startSlot, endSlot uint64) ([]interface{}, error) {
+func (in *Inner) Get_payloads(startSlot, endSlot uint64) ([]interface{}, error) {
 	var payloads []interface{}
 
 	// Fetch the block at endSlot to get the initial parent hash
@@ -345,11 +384,22 @@ func (in *Inner) Get_payloads(ctx context.Context, startSlot, endSlot uint64) ([
 	}
 }
 func (in *Inner) advance() error {
-	// Fetch and apply finality update
-	finalityUpdate, err := in.RPC.GetFinalityUpdate()
-	if err != nil {
-		return err
+	ErrorChan := make(chan error, 1)
+	finalityChan := make(chan consensus_core.FinalityUpdate, 1)
+
+	go func() {
+		finalityUpdate, err := in.RPC.GetFinalityUpdate()
+		if err != nil {
+			ErrorChan <- err
+			return
+		}
+		finalityChan <- finalityUpdate
+		ErrorChan <- nil
+	}()
+	if ErrorChan != nil {
+		return <-ErrorChan
 	}
+	finalityUpdate := <-finalityChan
 	if err := in.verify_finality_update(&finalityUpdate); err != nil {
 		return err
 	}
@@ -394,60 +444,74 @@ func (in *Inner) sync(checkpoint [32]byte) error {
 	// Perform bootstrap with the given checkpoint
 	in.bootstrap(checkpoint)
 
-	// Calculate the current sync period
 	currentPeriod := utils.CalcSyncPeriod(in.Store.FinalizedHeader.Slot)
 
-	// Fetch updates
-	updates, err := in.RPC.GetUpdates(currentPeriod, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
-	if err != nil {
-		return err
-	}
-
-	// Apply updates
-	for _, update := range updates {
-		if err := in.verify_update(&update); err != nil {
-			return err
+	errorChan := make(chan error, 1)
+	var updates []consensus_core.Update
+	var err error
+	go func() {
+		updates, err = in.RPC.GetUpdates(currentPeriod, MAX_REQUEST_LIGHT_CLIENT_UPDATES)
+		if err != nil {
+			errorChan <- err
 		}
-		in.apply_update(&update)
-	}
 
-	// Fetch and apply finality update
-	finalityUpdate, err := in.RPC.GetFinalityUpdate()
-	if err != nil {
+		// Apply updates
+		for _, update := range updates {
+			if err := in.verify_update(&update); err != nil {
+
+				errorChan <- err
+				return
+			}
+			in.apply_update(&update)
+		}
+
+		finalityUpdate, err := in.RPC.GetFinalityUpdate()
+		if err != nil {
+
+			errorChan <- err
+			return
+		}
+
+		if err := in.verify_finality_update(&finalityUpdate); err != nil {
+			errorChan <- err
+			return
+		}
+		in.apply_finality_update(&finalityUpdate)
+
+		// Fetch and apply optimistic update
+
+		optimisticUpdate, err := in.RPC.GetOptimisticUpdate()
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		if err := in.verify_optimistic_update(&optimisticUpdate); err != nil {
+			errorChan <- err
+			return
+		}
+		in.apply_optimistic_update(&optimisticUpdate)
+		errorChan <- nil
+		log.Printf("consensus client in sync with checkpoint: 0x%s", hex.EncodeToString(checkpoint[:]))
+	}()
+
+	if err := <-errorChan; err != nil {
 		return err
 	}
-	if err := in.verify_finality_update(&finalityUpdate); err != nil {
-		return err
-	}
-	in.apply_finality_update(&finalityUpdate)
-
-	// Fetch and apply optimistic update
-
-	optimisticUpdate, err := in.RPC.GetOptimisticUpdate()
-	if err != nil {
-		return err
-	}
-	if err := in.verify_optimistic_update(&optimisticUpdate); err != nil {
-		return err
-	}
-	in.apply_optimistic_update(&optimisticUpdate)
-
 	// Log the success message
-	log.Printf("consensus client in sync with checkpoint: 0x%s", hex.EncodeToString(checkpoint[:]))
 
 	return nil
 }
 func (in *Inner) send_blocks() error {
 	// Get slot from the optimistic header
 	slot := in.Store.OptimisticHeader.Slot
-	payload, err := in.get_execution_payload(context.Background(), &slot)
+	payload, err := in.get_execution_payload(&slot)
 	if err != nil {
 		return err
 	}
 
 	// Get finalized slot from the finalized header
 	finalizedSlot := in.Store.FinalizedHeader.Slot
-	finalizedPayload, err := in.get_execution_payload(context.Background(), &finalizedSlot)
+	finalizedPayload, err := in.get_execution_payload(&finalizedSlot)
 	if err != nil {
 		return err
 	}
@@ -493,18 +557,28 @@ func (in *Inner) duration_until_next_update() time.Duration {
 	return time.Duration(nextUpdate) * time.Second
 }
 func (in *Inner) bootstrap(checkpoint [32]byte) {
+	errorChan := make(chan error, 1)
+	bootstrapChan := make(chan consensus_core.Bootstrap, 1)
+	go func() {
+		bootstrap, errInBootstrap := in.RPC.GetBootstrap(checkpoint)
 
-	bootstrap, errInBootstrap := in.RPC.GetBootstrap(checkpoint)
-	if errInBootstrap != nil {
-		log.Printf("failed to fetch bootstrap: %v", errInBootstrap)
+		if errInBootstrap != nil {
+			log.Printf("failed to fetch bootstrap: %v", errInBootstrap)
+			errorChan <- errInBootstrap
+			return
+		}
+		bootstrapChan <- bootstrap
+		errorChan <- nil
+	}()
+	if err := <-errorChan; err != nil {
 		return
 	}
+	bootstrap := <-bootstrapChan
 
 	isValid := in.is_valid_checkpoint(bootstrap.Header.Slot)
 	if !isValid {
 		if in.Config.StrictCheckpointAge {
-			log.Printf("checkpoint too old, consider using a more recent checkpoint")
-			return
+			panic("checkpoint too old, consider using a more recent checkpoint")
 		} else {
 			log.Printf("checkpoint too old, consider using a more recent checkpoint")
 		}
@@ -521,11 +595,8 @@ func verify_bootstrap(checkpoint [32]byte, bootstrap consensus_core.Bootstrap) {
 		return
 	}
 
-	headerHash, err := utils.TreeHashRoot(bootstrap.Header.ToBytes())
-	if err != nil {
-		log.Println("failed to hash header")
-		return
-	}
+	headerHash := toGethHeader(&bootstrap.Header).Hash()
+
 	HeaderValid := bytes.Equal(headerHash[:], checkpoint[:])
 
 	if !HeaderValid {
@@ -547,7 +618,7 @@ func apply_bootstrap(store *LightClientStore, bootstrap consensus_core.Bootstrap
 
 func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlot uint64, store *LightClientStore, genesisRoots []byte, forks consensus_core.Forks) error {
 	{
-		bits := getBits(update.SyncAggregate.SyncCommitteeBits)
+		bits := getBits(update.SyncAggregate.SyncCommitteeBits[:])
 		if bits == 0 {
 			return ErrInsufficientParticipation
 		}
@@ -587,16 +658,15 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 			if !isFinalityProofValid(&update.AttestedHeader, &update.FinalizedHeader, update.FinalityBranch) {
 				return ErrInvalidFinalityProof
 			}
-		} else if update.FinalizedHeader != (consensus_core.Header{}) {
+		} else if (update.FinalizedHeader != (consensus_core.Header{}) && update.FinalityBranch == nil) || (update.FinalizedHeader == (consensus_core.Header{}) && update.FinalityBranch != nil) {
 			return ErrInvalidFinalityProof
 		}
 
-		// Validate next sync committee and its branch
 		if update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch != nil {
 			if !isNextCommitteeProofValid(&update.AttestedHeader, update.NextSyncCommittee, *update.NextSyncCommitteeBranch) {
 				return ErrInvalidNextSyncCommitteeProof
 			}
-		} else if update.NextSyncCommittee != nil {
+		} else if (update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch == nil) && (update.NextSyncCommittee == nil && update.NextSyncCommitteeBranch != nil) {
 			return ErrInvalidNextSyncCommitteeProof
 		}
 
@@ -607,7 +677,7 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		} else {
 			syncCommittee = in.Store.NextSyncCommitee
 		}
-		pks, err := utils.GetParticipatingKeys(syncCommittee, update.SyncAggregate.SyncCommitteeBits)
+		pks, err := utils.GetParticipatingKeys(syncCommittee, [64]byte(update.SyncAggregate.SyncCommitteeBits))
 		if err != nil {
 			return fmt.Errorf("failed to get participating keys: %w", err)
 		}
@@ -615,7 +685,7 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		forkVersion := utils.CalculateForkVersion(&forks, update.SignatureSlot)
 		forkDataRoot := utils.ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(in.Config.Chain.GenesisRoot))
 
-		if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate.SyncCommitteeSignature, forkDataRoot) {
+		if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
 			return ErrInvalidSignature
 		}
 
@@ -635,6 +705,9 @@ func (in *Inner) verify_update(update *consensus_core.Update) error {
 	return in.verify_generic_update(&genUpdate, in.expected_current_slot(), &in.Store, in.Config.Chain.GenesisRoot, in.Config.Forks)
 }
 func (in *Inner) verify_finality_update(update *consensus_core.FinalityUpdate) error {
+	if update == nil {
+		return ErrInvalidUpdate
+	}
 	genUpdate := GenericUpdate{
 		AttestedHeader:  update.AttestedHeader,
 		SyncAggregate:   update.SyncAggregate,
@@ -653,7 +726,7 @@ func (in *Inner) verify_optimistic_update(update *consensus_core.OptimisticUpdat
 	return in.verify_generic_update(&genUpdate, in.expected_current_slot(), &in.Store, in.Config.Chain.GenesisRoot, in.Config.Forks)
 }
 func (in *Inner) apply_generic_update(store *LightClientStore, update *GenericUpdate) *[]byte {
-	committeeBits := getBits(update.SyncAggregate.SyncCommitteeBits)
+	committeeBits := getBits(update.SyncAggregate.SyncCommitteeBits[:])
 
 	// Update max active participants
 	if committeeBits > store.CurrentMaxActiveParticipants {
@@ -715,11 +788,9 @@ func (in *Inner) apply_generic_update(store *LightClientStore, update *GenericUp
 			}
 
 			if store.FinalizedHeader.Slot%32 == 0 {
-				checkpoint, err := utils.TreeHashRoot(store.FinalizedHeader.ToBytes())
-				if err != nil {
-					return nil
-				}
-				return &checkpoint
+				checkpoint := toGethHeader(&store.FinalizedHeader).Hash()
+				checkpointBytes := checkpoint.Bytes()
+				return &checkpointBytes
 			}
 		}
 	}
@@ -766,7 +837,7 @@ func (in *Inner) apply_optimistic_update(update *consensus_core.OptimisticUpdate
 	}
 }
 func (in *Inner) Log_finality_update(update *consensus_core.FinalityUpdate) {
-	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits)) / 512.0 * 100.0
+	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits[:])) / 512.0 * 100.0
 	decimals := 2
 	if participation == 100.0 {
 		decimals = 1
@@ -784,7 +855,7 @@ func (in *Inner) Log_finality_update(update *consensus_core.FinalityUpdate) {
 	)
 }
 func (in *Inner) Log_optimistic_update(update *consensus_core.OptimisticUpdate) {
-	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits)) / 512.0 * 100.0
+	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits[:])) / 512.0 * 100.0
 	decimals := 2
 	if participation == 100.0 {
 		decimals = 1
@@ -815,38 +886,52 @@ func (in *Inner) safety_threshold() uint64 {
 func verifySyncCommitteeSignature(
 	pks []consensus_core.BLSPubKey, // Public keys slice
 	attestedHeader *consensus_core.Header, // Attested header
-	signature *consensus_core.SignatureBytes, // Signature bytes
+	signature *consensus_core.SyncAggregate, // Signature bytes
 	forkDataRoot consensus_core.Bytes32, // Fork data root
 ) bool {
 	// Collect public keys as references (or suitable Go struct)
-	collectedPks := make([]*consensus_core.BLSPubKey, len(pks))
-	for i := range pks {
-		collectedPks[i] = &pks[i]
-	}
-
-	// Compute headerRoot
-	headerRoot, err := utils.TreeHashRoot(attestedHeader.ToBytes())
-	if err != nil {
+	if len(pks) == 0 {
+		fmt.Println("no public keys")
 		return false
 	}
-	var headerRootBytes consensus_core.Bytes32
-	copy(headerRootBytes[:], headerRoot[:])
-	// Compute signingRoot
-	signingRoot := ComputeCommitteeSignRoot(headerRootBytes, forkDataRoot)
-	var g2Points []*bls.G2Point
-	for _, pk := range collectedPks {
-		var g2Point bls.G2Point
-		errWhileCoonvertingtoG2 := g2Point.Unmarshal(pk[:])
 
-		if errWhileCoonvertingtoG2 != nil {
-			return false
-		}
+	if signature == nil {
+		fmt.Println("no signature")
+		return false
 	}
 
-	return utils.IsAggregateValid(*signature, signingRoot, g2Points)
+	collectedPks := make([]*bls.Pubkey, len(pks))
+	for i := range pks {
+		var pksinBytes [48]byte
+		copy(pksinBytes[:], pks[i][:]) // Copy the bytes safely
+		var dkey bls.Pubkey
+		err := dkey.Deserialize(&pksinBytes)
+		if err != nil {
+			return false
+		}
+		collectedPks[i] = &dkey
+	}
+
+	// Compute signingRoot
+	signingRoot := ComputeCommitteeSignRoot(toGethHeader(attestedHeader), forkDataRoot)
+
+	var sig bls.Signature
+	signatureForUnmarshalling := [96]byte{}
+	copy(signatureForUnmarshalling[:], signature.SyncCommitteeSignature[:])
+
+	if err := sig.Deserialize(&signatureForUnmarshalling); err != nil {
+		return false
+	}
+
+	err := bls.FastAggregateVerify(collectedPks, signingRoot[:], &sig)
+	if err {
+		return false
+	}
+
+	return true
 }
 
-func ComputeCommitteeSignRoot(header consensus_core.Bytes32, fork consensus_core.Bytes32) consensus_core.Bytes32 {
+func ComputeCommitteeSignRoot(header *beacon.Header, fork consensus_core.Bytes32) consensus_core.Bytes32 {
 	// Domain type for the sync committee
 	domainType := [4]byte{7, 0, 0, 0}
 
@@ -880,27 +965,18 @@ func (in *Inner) is_valid_checkpoint(blockHashSlot uint64) bool {
 }
 
 func isFinalityProofValid(attestedHeader *consensus_core.Header, finalizedHeader *consensus_core.Header, finalityBranch []consensus_core.Bytes32) bool {
-	finalityBranchForProof, err := utils.BranchToNodes(finalityBranch)
-	if err != nil {
-		return false
-	}
-	return utils.IsProofValid(attestedHeader, finalizedHeader.ToBytes(), finalityBranchForProof, 6, 41)
+
+	return utils.IsProofValid(attestedHeader, toGethHeader(finalizedHeader).Hash(), finalityBranch, 6, 105)
 }
 
 func isCurrentCommitteeProofValid(attestedHeader *consensus_core.Header, currentCommittee *consensus_core.SyncCommittee, currentCommitteeBranch []consensus_core.Bytes32) bool {
-	CurrentCommitteeForProof, err := utils.BranchToNodes(currentCommitteeBranch)
-	if err != nil {
-		return false
-	}
-	return utils.IsProofValid(attestedHeader, currentCommittee.ToBytes(), CurrentCommitteeForProof, 5, 22)
+
+	return utils.IsProofValid(attestedHeader, toGethSyncCommittee(currentCommittee).Root(), currentCommitteeBranch, 5, 54)
 }
 
-func isNextCommitteeProofValid(attestedHeader *consensus_core.Header, currentCommittee *consensus_core.SyncCommittee, currentCommitteeBranch []consensus_core.Bytes32) bool {
-	currentCommitteeBranchForProof, err := utils.BranchToNodes(currentCommitteeBranch)
-	if err != nil {
-		return false
-	}
-	return utils.IsProofValid(attestedHeader, currentCommittee.ToBytes(), currentCommitteeBranchForProof, 5, 23)
+func isNextCommitteeProofValid(attestedHeader *consensus_core.Header, nextCommittee *consensus_core.SyncCommittee, nextCommitteeBranch []consensus_core.Bytes32) bool {
+
+	return utils.IsProofValid(attestedHeader, toGethSyncCommittee(nextCommittee).Root(), nextCommitteeBranch, 5, 55)
 }
 
 func PayloadToBlock(value *consensus_core.ExecutionPayload) (*common.Block, error) {
@@ -1005,7 +1081,7 @@ func processTransaction(txBytes *[1073741824]byte, blockHash consensus_core.Byte
 }
 
 // getBits counts the number of bits set to 1 in a [64]byte array
-func getBits(bitfield [64]byte) uint64 {
+func getBits(bitfield []byte) uint64 {
 	var count uint64
 	for _, b := range bitfield {
 		count += uint64(popCount(b))
@@ -1061,4 +1137,37 @@ func SomeGasPrice(gasFeeCap, gasTipCap *big.Int, baseFeePerGas uint64) *big.Int 
 		return alternativeGasPrice
 	}
 	return maxGasPrice
+}
+
+func toGethHeader(header *consensus_core.Header) *beacon.Header {
+	return &beacon.Header{
+		Slot:          header.Slot,
+		ProposerIndex: header.ProposerIndex,
+		ParentRoot:    [32]byte(header.ParentRoot),
+		StateRoot:     [32]byte(header.StateRoot),
+		BodyRoot:      [32]byte(header.BodyRoot),
+	}
+}
+
+type jsonSyncCommittee struct {
+	Pubkeys   []hexutil.Bytes
+	Aggregate hexutil.Bytes
+}
+
+func toGethSyncCommittee(committee *consensus_core.SyncCommittee) *beacon.SerializedSyncCommittee {
+	jsoncommittee := &jsonSyncCommittee{
+		Aggregate: committee.AggregatePubkey[:],
+	}
+
+	for _, pubkey := range committee.Pubkeys {
+		jsoncommittee.Pubkeys = append(jsoncommittee.Pubkeys, pubkey[:])
+	}
+
+	var s beacon.SerializedSyncCommittee
+
+	for i, key := range jsoncommittee.Pubkeys {
+		copy(s[i*48:], key[:])
+	}
+	copy(s[512*48:], jsoncommittee.Aggregate[:])
+	return &s
 }
