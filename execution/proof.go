@@ -3,19 +3,11 @@ package execution
 import (
 	"bytes"
 	"fmt"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/holiman/uint256"
 	"golang.org/x/crypto/sha3"
 )
 
-// EIP1186AccountProofResponse for account proof encoding
-type EIP1186AccountProofResponse struct {
-	Nonce       uint64
-	Balance     *big.Int
-	StorageHash [32]byte
-	CodeHash    [32]byte
-}
 
 func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, error) {
 	expectedHash := root
@@ -105,7 +97,7 @@ func GetRestPath(p []byte, s int) string {
 func isEmptyValue(value []byte) bool {
 	emptyAccount := Account{
 		Nonce:       0,
-		Balance:     big.NewInt(0),
+		Balance:     *uint256.NewInt(0),
 		StorageHash: [32]byte{0x56, 0xe8, 0x1f, 0x17, 0x1b, 0xcc, 0x55, 0xa6, 0xff, 0x83, 0x45, 0xe6, 0x92, 0xc0, 0xf8, 0x6e, 0x5b, 0x48, 0xe0, 0x1b, 0x99, 0x6c, 0xad, 0xc0, 0x01, 0x62, 0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21},
 		CodeHash:    [32]byte{0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0, 0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70},
 	}
@@ -166,10 +158,10 @@ func keccak256(data []byte) []byte {
 	return hash.Sum(nil)
 }
 
-func EncodeAccount(proof *EIP1186AccountProofResponse) ([]byte, error) {
+func EncodeAccount(proof *EIP1186ProofResponse) ([]byte, error) {
 	account := Account{
 		Nonce:       proof.Nonce,
-		Balance:     proof.Balance,
+		Balance:     *proof.Balance,
 		StorageHash: proof.StorageHash,
 		CodeHash:    proof.CodeHash,
 	}
