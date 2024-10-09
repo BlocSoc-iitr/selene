@@ -21,10 +21,10 @@ const KECCAK_EMPTY = "0x"
 
 type ExecutionClient struct {
 	Rpc   ExecutionRpc
-	state State
+	state *State
 }
 
-func (e *ExecutionClient) New(rpc string, state State) (*ExecutionClient, error) {
+func (e *ExecutionClient) New(rpc string, state *State) (*ExecutionClient, error) {
 	r, err := ExecutionRpc.New(nil, &rpc)
 	if err != nil {
 		return nil, err
@@ -59,10 +59,10 @@ func (e *ExecutionClient) CheckRpc(chainID uint64) error {
 // GetAccount retrieves the account information
 func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots common.Hash, tag seleneCommon.BlockTag) (Account, error) { //Account from execution/types.go
 	block := e.state.GetBlock(tag)
-	proof, err := e.Rpc.GetProof(address, &[]common.Hash{slots}, block.Number) 
+	proof, _ := e.Rpc.GetProof(address, &[]common.Hash{slots}, block.Number) 
 
 	accountPath := crypto.Keccak256(address.Addr[:])
-	accountEncoded, err := EncodeAccount(&proof) 
+	accountEncoded, _ := EncodeAccount(&proof) 
 	accountProofBytes := make([][]byte, len(proof.AccountProof))
 	for i, hexByte := range proof.AccountProof {
 		accountProofBytes[i] = hexByte
@@ -242,7 +242,7 @@ func (e *ExecutionClient) GetTransactionReceipt(txHash common.Hash) (types.Recei
 				}
 				receiptsEncoded = append(receiptsEncoded, encodedReceipt)
 			}
-			expectedReceiptRoot, err := CalculateReceiptRoot(receipts)
+			expectedReceiptRoot, err := CalculateReceiptRoot(receiptsEncoded)
 			if err != nil {
 				return types.Receipt{}, err
 			}
@@ -474,9 +474,6 @@ func encodeReceipt(receipt *types.Receipt) ([]byte, error) {
         return nil, err
     }
     txType := &receipt.Type
-    if txType == nil {
-        return legacyReceiptEncoded, nil
-    }
     if *txType == 0 {
         return legacyReceiptEncoded, nil
     }
@@ -484,7 +481,7 @@ func encodeReceipt(receipt *types.Receipt) ([]byte, error) {
     return append(txTypeBytes, legacyReceiptEncoded...), nil
 }
 // need to confirm if TxHash is actually used as the key to calculate the receipt root or not
-func CalculateReceiptRoot(receipts []types.Receipt) (common.Hash, error) {
+func CalculateReceiptRoot(receipts [][]byte) (common.Hash, error) {
     if len(receipts) == 0 {
         return common.Hash{}, errors.New("no receipts to calculate root")
     }
