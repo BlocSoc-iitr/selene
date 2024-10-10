@@ -685,8 +685,10 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		forkVersion := utils.CalculateForkVersion(&forks, update.SignatureSlot)
 		forkDataRoot := utils.ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(in.Config.Chain.GenesisRoot))
 
-		if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
-			return ErrInvalidSignature
+	
+
+		 if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
+		 	return ErrInvalidSignature
 		}
 
 		return nil
@@ -889,45 +891,52 @@ func verifySyncCommitteeSignature(
 	signature *consensus_core.SyncAggregate, // Signature bytes
 	forkDataRoot consensus_core.Bytes32, // Fork data root
 ) bool {
-	// Collect public keys as references (or suitable Go struct)
-	if len(pks) == 0 {
-		fmt.Println("no public keys")
-		return false
-	}
 
 	if signature == nil {
 		fmt.Println("no signature")
 		return false
 	}
 
-	collectedPks := make([]*bls.Pubkey, len(pks))
+	// Create a slice to hold the collected public keys.
+	collectedPks := make([]*bls.Pubkey, 0, len(pks))
 	for i := range pks {
-		var pksinBytes [48]byte
-		copy(pksinBytes[:], pks[i][:]) // Copy the bytes safely
-		var dkey bls.Pubkey
+		var pksinBytes [48]byte = [48]byte(pks[i])
+		dkey := new(bls.Pubkey)
 		err := dkey.Deserialize(&pksinBytes)
 		if err != nil {
+			fmt.Println("error deserializing public key:", err)
 			return false
 		}
-		collectedPks[i] = &dkey
+
+		// Include the public key only if the corresponding SyncCommitteeBits bit is set.
+		if signature.SyncCommitteeBits[i/8]&(byte(1)<<(i%8)) != 0 {
+			collectedPks = append(collectedPks, dkey)
+		}
 	}
 
-	// Compute signingRoot
+	// Compute signingRoot.
 	signingRoot := ComputeCommitteeSignRoot(toGethHeader(attestedHeader), forkDataRoot)
 
 	var sig bls.Signature
-	signatureForUnmarshalling := [96]byte{}
-	copy(signatureForUnmarshalling[:], signature.SyncCommitteeSignature[:])
+	signatureForUnmarshalling := [96]byte(signature.SyncCommitteeSignature)
 
+	// Deserialize the signature.
 	if err := sig.Deserialize(&signatureForUnmarshalling); err != nil {
+		fmt.Println("error deserializing signature:", err)
+		return false
+	}
+
+	// Check if we have collected any public keys before proceeding.
+	if len(collectedPks) == 0 {
+		fmt.Println("no valid public keys collected")
 		return false
 	}
 
 	err := bls.FastAggregateVerify(collectedPks, signingRoot[:], &sig)
 	if err {
+		fmt.Println("signature verification failed")
 		return false
 	}
-
 	return true
 }
 

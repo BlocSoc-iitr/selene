@@ -123,34 +123,24 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 			case uint64:
 				val, err := Str_to_uint64(value.(string))
 				if err != nil {
-					return fmt.Errorf("error parsing %s: %w", fieldName, err)
+					continue
 				}
 				field.Set(reflect.ValueOf(val))
 			case Bytes32:
 				val, err := Hex_str_to_Bytes32(value.(string))
 				if err != nil {
-					return fmt.Errorf("error parsing %s: %w", fieldName, err)
+				  continue
 				}
 				field.Set(reflect.ValueOf(val))
 			}
 		} else {
-			return fmt.Errorf("field %s not found in JSON data", fieldName)
+			continue
 		}
 	}
 
 	return nil
 }
 
-func (b *Bytes32) UnmarshalJSON(data []byte) error {
-	var hexString string
-	if err := json.Unmarshal(data, &hexString); err != nil {
-		return err
-	}
-
-	copy(b[:], hexDecode(hexString)[:])
-
-	return nil
-}
 
 func (s *SyncAggregate) UnmarshalJSON(data []byte) error {
 	// Define a temporary map to hold JSON data
@@ -282,6 +272,29 @@ func unmarshalJSON(data []byte, v interface{}) error {
 	return nil
 }
 
+func (b *BeaconBlock) UnmarshalJSON(data []byte) error {
+    // Define a temporary structure to handle both string and number slots.
+    var tmp struct {
+        Slot json.RawMessage `json:"slot"`
+    }
+
+    // Unmarshal into the temporary struct.
+    if err := json.Unmarshal(data, &tmp); err != nil {
+        return fmt.Errorf("error unmarshalling into temporary struct: %w", err)
+    }
+
+    
+
+    // If it wasn't a string, try unmarshalling as a number.
+    var slotNum uint64
+    if err := json.Unmarshal(tmp.Slot, &slotNum); err == nil {
+        b.Slot = slotNum
+        return nil
+    }
+
+    return fmt.Errorf("slot field is not a valid string or number")
+}
+
 func setFieldValue(field reflect.Value, value interface{}) error {
 	switch field.Kind() {
 	case reflect.Struct:
@@ -379,4 +392,15 @@ func snakeCase(input string) string {
 func hexDecode(input string) []byte {
 	data, _ := Hex_str_to_bytes(input)
 	return data
+}
+
+func (b *Bytes32) UnmarshalJSON(data []byte) error {
+	var hexString string
+	if err := json.Unmarshal(data, &hexString); err != nil {
+		return err
+	}
+
+	copy(b[:], hexDecode(hexString)[:])
+
+	return nil
 }
