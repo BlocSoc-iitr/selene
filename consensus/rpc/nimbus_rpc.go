@@ -72,7 +72,6 @@ func (n *NimbusRpc) GetUpdates(period uint64, count uint8) ([]consensus_core.Upd
 	if err != nil {
 		return nil, fmt.Errorf("updates error: %w", err)
 	}
-
 	updates := make([]consensus_core.Update, len(res))
 	for i, update := range res {
 		updates[i] = update.Data
@@ -117,7 +116,7 @@ func (n *NimbusRpc) ChainId() (uint64, error) {
 }
 
 // BeaconBlock, Update,FinalityUpdate ,OptimisticUpdate,Bootstrap yet to be defined in consensus-core/src/types/mod.go
-// For now defined in consensus/ go
+// For now defined in consensus/consensus_core.go
 type BeaconBlockResponse struct {
 	Data BeaconBlockData
 }
@@ -126,14 +125,13 @@ type BeaconBlockData struct {
 }
 type UpdateResponse = []UpdateData
 type UpdateData struct {
-	Data consensus_core.Update `json:"data"`
+	Data consensus_core.Update
 }
-
 type FinalityUpdateResponse struct {
-	Data consensus_core.FinalityUpdate `json:"data"`
+	Data consensus_core.FinalityUpdate
 }
 type OptimisticUpdateResponse struct {
-	Data consensus_core.OptimisticUpdate `json:"data"`
+	Data consensus_core.OptimisticUpdate
 }
 type SpecResponse struct {
 	Data Spec
@@ -142,5 +140,5 @@ type Spec struct {
 	ChainId uint64
 }
 type BootstrapResponse struct {
-	Data consensus_core.Bootstrap `json:"data"`
+	Data consensus_core.Bootstrap
 }
