@@ -1,14 +1,17 @@
 package rpc
+
 import (
-	"testing"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
 )
+
 // MockConsensusRpc is a mock implementation of the ConsensusRpc interface
 type MockConsensusRpc struct {
 	mock.Mock
 }
+
 func (m *MockConsensusRpc) GetBootstrap(block_root [32]byte) (consensus_core.Bootstrap, error) {
 	args := m.Called(block_root)
 	return args.Get(0).(consensus_core.Bootstrap), args.Error(1)
@@ -60,7 +63,7 @@ func TestConsensusRpcInterface(t *testing.T) {
 	mockRpc.On("GetFinalityUpdate").Return(mockFinalityUpdate, nil)
 	finalityUpdate, err := mockRpc.GetFinalityUpdate()
 	assert.NoError(t, err)
-	assert.Equal(t, uint64(3000), finalityUpdate.FinalizedHeader.Slot)	
+	assert.Equal(t, uint64(3000), finalityUpdate.FinalizedHeader.Slot)
 	// Test GetOptimisticUpdate
 	mockOptimisticUpdate := consensus_core.OptimisticUpdate{SignatureSlot: 4000}
 	mockRpc.On("GetOptimisticUpdate").Return(mockOptimisticUpdate, nil)

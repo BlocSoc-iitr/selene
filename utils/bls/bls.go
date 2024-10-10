@@ -1,9 +1,9 @@
 package bls
 
 import (
-	"math/big"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
+	"math/big"
 )
 
 type G1Point struct {

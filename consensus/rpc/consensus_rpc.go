@@ -15,5 +15,9 @@ type ConsensusRpc interface {
 }
 
 func NewConsensusRpc(rpc string) ConsensusRpc {
-	return NewNimbusRpc(rpc)
+	if rpc == "testdata/" {
+		return NewMockRpc(rpc)
+	} else {
+		return NewNimbusRpc(rpc)
+	}
 }
