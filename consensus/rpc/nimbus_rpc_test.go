@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
 func TestNewNimbusRpc(t *testing.T) {
 	rpcURL := "http://example.com"
 	nimbusRpc := NewNimbusRpc(rpcURL)
@@ -42,6 +43,11 @@ func TestNimbusGetBootstrap(t *testing.T) {
 	assert.Equal(t, uint64(1000), bootstrap.Header.Slot)
 }
 func TestNimbusGetUpdates(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Test panicked: %v", r)
+		}
+	}()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/eth/v1/beacon/light_client/updates", r.URL.Path)
 		assert.Equal(t, "start_period=1000&count=5", r.URL.RawQuery)
