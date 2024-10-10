@@ -2,11 +2,10 @@ package rpc
 
 import (
 	"encoding/json"
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"os"
 	"path/filepath"
 	"testing"
-		"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
-
 )
 
 func TestGetBootstrap(t *testing.T) {
@@ -59,11 +58,11 @@ func TestGetUpdates(t *testing.T) {
 			"data": map[string]interface{}{
 				"attested_header": map[string]interface{}{
 					"beacon": map[string]interface{}{
-						"slot": "1",
+						"slot":           "1",
 						"proposer_index": "12345",
-					"parent_root":    "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-					"state_root":     "0x2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
-					"body_root":      "0x4142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60",
+						"parent_root":    "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+						"state_root":     "0x2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
+						"body_root":      "0x4142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60",
 					},
 				},
 				"signature_slot": "1",

@@ -1,18 +1,20 @@
 package config
+
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"strings"
+	"testing"
 )
+
 func TestNetwork_BaseConfig(t *testing.T) {
 	tests := []struct {
-		name            string
-		inputNetwork    string
-		expectedChainID uint64
-		expectedGenesis uint64
-		expectedRPCPort uint16
+		name              string
+		inputNetwork      string
+		expectedChainID   uint64
+		expectedGenesis   uint64
+		expectedRPCPort   uint16
 		checkConsensusRPC func(*testing.T, *string)
-		wantErr         bool
+		wantErr           bool
 	}{
 		{
 			name:            "Mainnet",
@@ -24,7 +26,7 @@ func TestNetwork_BaseConfig(t *testing.T) {
 				assert.NotNil(t, rpc)
 				assert.Equal(t, "https://www.lightclientdata.org", *rpc)
 			},
-			wantErr:         false,
+			wantErr: false,
 		},
 		{
 			name:            "Goerli",
@@ -35,7 +37,7 @@ func TestNetwork_BaseConfig(t *testing.T) {
 			checkConsensusRPC: func(t *testing.T, rpc *string) {
 				assert.Nil(t, rpc)
 			},
-			wantErr:         false,
+			wantErr: false,
 		},
 		{
 			name:            "Sepolia",
@@ -46,16 +48,16 @@ func TestNetwork_BaseConfig(t *testing.T) {
 			checkConsensusRPC: func(t *testing.T, rpc *string) {
 				assert.Nil(t, rpc)
 			},
-			wantErr:         false,
+			wantErr: false,
 		},
 		{
-			name:            "Invalid",
-			inputNetwork:    "INVALID",
-			expectedChainID: 0,
-			expectedGenesis: 0,
-			expectedRPCPort: 0,
+			name:              "Invalid",
+			inputNetwork:      "INVALID",
+			expectedChainID:   0,
+			expectedGenesis:   0,
+			expectedRPCPort:   0,
 			checkConsensusRPC: func(t *testing.T, rpc *string) {},
-			wantErr:         true,
+			wantErr:           true,
 		},
 	}
 
@@ -71,17 +73,17 @@ func TestNetwork_BaseConfig(t *testing.T) {
 				assert.Equal(t, tt.expectedGenesis, config.Chain.GenesisTime)
 				assert.Equal(t, tt.expectedRPCPort, config.RpcPort)
 				tt.checkConsensusRPC(t, config.ConsensusRpc)
-				
+
 				// Check Forks
 				assert.NotEmpty(t, config.Forks.Genesis)
 				assert.NotEmpty(t, config.Forks.Altair)
 				assert.NotEmpty(t, config.Forks.Bellatrix)
 				assert.NotEmpty(t, config.Forks.Capella)
 				assert.NotEmpty(t, config.Forks.Deneb)
-				
+
 				// Check MaxCheckpointAge
 				assert.Equal(t, uint64(1_209_600), config.MaxCheckpointAge)
-				
+
 				// Check DataDir
 				assert.NotNil(t, config.DataDir)
 				assert.Contains(t, strings.ToLower(*config.DataDir), strings.ToLower(tt.inputNetwork))
@@ -91,13 +93,13 @@ func TestNetwork_BaseConfig(t *testing.T) {
 }
 func TestNetwork_ChainID(t *testing.T) {
 	tests := []struct {
-		name            string
-		inputChainID    uint64
-		expectedChainID uint64
-		expectedGenesis uint64
-		expectedRPCPort uint16
+		name              string
+		inputChainID      uint64
+		expectedChainID   uint64
+		expectedGenesis   uint64
+		expectedRPCPort   uint16
 		checkConsensusRPC func(*testing.T, *string)
-		wantErr         bool
+		wantErr           bool
 	}{
 		{
 			name:            "Mainnet",
@@ -109,7 +111,7 @@ func TestNetwork_ChainID(t *testing.T) {
 				assert.NotNil(t, rpc)
 				assert.Equal(t, "https://www.lightclientdata.org", *rpc)
 			},
-			wantErr:         false,
+			wantErr: false,
 		},
 		{
 			name:            "Goerli",
@@ -120,7 +122,7 @@ func TestNetwork_ChainID(t *testing.T) {
 			checkConsensusRPC: func(t *testing.T, rpc *string) {
 				assert.Nil(t, rpc)
 			},
-			wantErr:         false,
+			wantErr: false,
 		},
 		{
 			name:            "Sepolia",
@@ -131,16 +133,16 @@ func TestNetwork_ChainID(t *testing.T) {
 			checkConsensusRPC: func(t *testing.T, rpc *string) {
 				assert.Nil(t, rpc)
 			},
-			wantErr:         false,
+			wantErr: false,
 		},
 		{
-			name:            "Invalid ChainID",
-			inputChainID:    9999, // Non-existent ChainID
-			expectedChainID: 0,
-			expectedGenesis: 0,
-			expectedRPCPort: 0,
+			name:              "Invalid ChainID",
+			inputChainID:      9999, // Non-existent ChainID
+			expectedChainID:   0,
+			expectedGenesis:   0,
+			expectedRPCPort:   0,
 			checkConsensusRPC: func(t *testing.T, rpc *string) {},
-			wantErr:         true,
+			wantErr:           true,
 		},
 	}
 
@@ -156,17 +158,17 @@ func TestNetwork_ChainID(t *testing.T) {
 				assert.Equal(t, tt.expectedGenesis, config.Chain.GenesisTime)
 				assert.Equal(t, tt.expectedRPCPort, config.RpcPort)
 				tt.checkConsensusRPC(t, config.ConsensusRpc)
-				
+
 				// Check Forks
 				assert.NotEmpty(t, config.Forks.Genesis)
 				assert.NotEmpty(t, config.Forks.Altair)
 				assert.NotEmpty(t, config.Forks.Bellatrix)
 				assert.NotEmpty(t, config.Forks.Capella)
 				assert.NotEmpty(t, config.Forks.Deneb)
-				
+
 				// Check MaxCheckpointAge
 				assert.Equal(t, uint64(1_209_600), config.MaxCheckpointAge)
-				
+
 				// Check DataDir
 				assert.NotNil(t, config.DataDir)
 				assert.Contains(t, strings.ToLower(*config.DataDir), strings.ToLower(tt.name))

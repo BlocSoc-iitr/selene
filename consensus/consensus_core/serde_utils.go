@@ -23,41 +23,7 @@ func (b *Bootstrap) UnmarshalJSON(data []byte) error {
 	return unmarshalJSON(data, b)
 }
 
-// Unmarshal for Fork
-func (f *Fork) UnmarshalJSON(data []byte) error {
-	var serialized map[string]interface{}
-	if err := json.Unmarshal(data, &serialized); err != nil {
-		return fmt.Errorf("error unmarshalling into map: %w", err)
-	}
 
-	v := reflect.ValueOf(f).Elem()
-	t := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		fieldType := t.Field(i)
-		fieldName := fieldType.Tag.Get("json")
-		if fieldName == "" {
-			fieldName = snakeCase(fieldType.Name)
-		}
-
-		if value, ok := serialized[fieldName]; ok {
-			switch field.Interface().(type) {
-			case uint64:
-				val, err := strconv.ParseUint(value.(string), 10, 64)
-				if err != nil {
-					return fmt.Errorf("error parsing %s: %w", fieldName, err)
-				}
-				field.Set(reflect.ValueOf(val))
-			case []byte:
-				decoded := hexDecode(value.(string))
-				field.Set(reflect.ValueOf(decoded))
-			}
-		}
-	}
-
-	return nil
-}
 
 func (f *Forks) UnmarshalJSON(data []byte) error {
 	var serialized map[string]interface{}
@@ -129,7 +95,7 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 			case Bytes32:
 				val, err := Hex_str_to_Bytes32(value.(string))
 				if err != nil {
-				  continue
+					continue
 				}
 				field.Set(reflect.ValueOf(val))
 			}
@@ -140,7 +106,6 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
 
 func (s *SyncAggregate) UnmarshalJSON(data []byte) error {
 	// Define a temporary map to hold JSON data
@@ -273,26 +238,24 @@ func unmarshalJSON(data []byte, v interface{}) error {
 }
 
 func (b *BeaconBlock) UnmarshalJSON(data []byte) error {
-    // Define a temporary structure to handle both string and number slots.
-    var tmp struct {
-        Slot json.RawMessage `json:"slot"`
-    }
+	// Define a temporary structure to handle both string and number slots.
+	var tmp struct {
+		Slot json.RawMessage `json:"slot"`
+	}
 
-    // Unmarshal into the temporary struct.
-    if err := json.Unmarshal(data, &tmp); err != nil {
-        return fmt.Errorf("error unmarshalling into temporary struct: %w", err)
-    }
+	// Unmarshal into the temporary struct.
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return fmt.Errorf("error unmarshalling into temporary struct: %w", err)
+	}
 
-    
+	// If it wasn't a string, try unmarshalling as a number.
+	var slotNum uint64
+	if err := json.Unmarshal(tmp.Slot, &slotNum); err == nil {
+		b.Slot = slotNum
+		return nil
+	}
 
-    // If it wasn't a string, try unmarshalling as a number.
-    var slotNum uint64
-    if err := json.Unmarshal(tmp.Slot, &slotNum); err == nil {
-        b.Slot = slotNum
-        return nil
-    }
-
-    return fmt.Errorf("slot field is not a valid string or number")
+	return fmt.Errorf("slot field is not a valid string or number")
 }
 
 func setFieldValue(field reflect.Value, value interface{}) error {
@@ -334,6 +297,9 @@ func setFieldValue(field reflect.Value, value interface{}) error {
 	}
 	return nil
 }
+
+
+
 
 // if we need to export the functions , just make their first letter capitalised
 func Hex_str_to_bytes(s string) ([]byte, error) {

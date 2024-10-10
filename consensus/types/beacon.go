@@ -2,8 +2,6 @@ package types
 
 // Serialization and Deserialization for ExecutionPayload and BeaconBlockBody can be done by importing from prewritten functions in utils wherever needed.
 
-
-
 type BeaconBlock struct {
 	Slot          uint64
 	ProposerIndex uint64
@@ -91,8 +89,6 @@ func (exe *ExecutionPayload) Def() {
 	exe.BlobGasUsed = 0                   // Only for Deneb
 	exe.ExcessBlobGas = 0                 // Only for Deneb
 } // default
-
-
 
 type Withdrawal struct {
 	Index          uint64

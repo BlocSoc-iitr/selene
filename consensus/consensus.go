@@ -685,10 +685,8 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		forkVersion := utils.CalculateForkVersion(&forks, update.SignatureSlot)
 		forkDataRoot := utils.ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(in.Config.Chain.GenesisRoot))
 
-	
-
-		 if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
-		 	return ErrInvalidSignature
+		if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
+			return ErrInvalidSignature
 		}
 
 		return nil
