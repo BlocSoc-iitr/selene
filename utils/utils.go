@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/hex"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -17,7 +16,11 @@ import (
 	consensus_core "github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 
 	beacon "github.com/ethereum/go-ethereum/beacon/types"
+	kbls "github.com/kilic/bls12-381"
+	bls "github.com/protolambda/bls12-381-util"
 )
+var domain = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_")
+
 
 // if we need to export the functions , just make their first letter capitalised
 func Hex_str_to_bytes(s string) ([]byte, error) {
@@ -221,7 +224,71 @@ func BranchToNodes(branch []consensus_core.Bytes32) ([][]byte, error) {
 	}
 	return nodes, nil
 }
-func IsURL(str string) bool {
-	u, err := url.Parse(str)
-	return err == nil && u.Scheme != "" && u.Host != ""
+
+func FastAggregateVerify(pubkeys []*bls.Pubkey, message []byte, signature *bls.Signature) bool {
+	n := uint64(len(pubkeys))
+	if n == 0 {
+		return false
+	}
+
+	g1 := kbls.NewG1()
+	// Procedure:
+	// 1. aggregate = pubkey_to_point(PK_1)
+	// copy the first pubkey
+	aggregate := *(*kbls.PointG1)(pubkeys[0])
+	// check identity pubkey
+	if (*kbls.G1)(nil).IsZero(&aggregate) {
+		fmt.Println("Identity pubkey")
+		return false
+	}
+	// 2. for i in 2, ..., n:
+	for i := uint64(1); i < n; i++ {
+		// 3. next = pubkey_to_point(PK_i)
+		next := (*kbls.PointG1)(pubkeys[i])
+		// check identity pubkey
+		if (*kbls.G1)(nil).IsZero(next) {
+			fmt.Println("Identity pubkey")
+			return false
+		}
+		// 4. aggregate = aggregate + next
+		g1.Add(&aggregate, &aggregate, next)
+	}
+	// 5. PK = point_to_pubkey(aggregate)
+	PK := (*bls.Pubkey)(&aggregate)
+	return coreVerify(PK, message, signature)
 }
+
+func coreVerify(pk *bls.Pubkey, message []byte, signature *bls.Signature) bool {
+	// 1. R = signature_to_point(signature)
+	R := (*kbls.PointG2)(signature)
+	// 2. If R is INVALID, return INVALID
+	// 3. If signature_subgroup_check(R) is INVALID, return INVALID
+	// 4. If KeyValidate(PK) is INVALID, return INVALID
+	// steps 2-4 are part of bytes -> *Signature deserialization
+	if (*kbls.G2)(nil).IsZero(R) {
+		// KeyValidate is assumed through deserialization of Pubkey and Signature,
+		// but the identity pubkey/signature case is not part of that, thus verify here.
+		fmt.Print("Identity signature")
+		return false
+	}
+
+	// 5. xP = pubkey_to_point(PK)
+	xP := (*kbls.PointG1)(pk)
+	// 6. Q = hash_to_point(message)
+	Q, err := kbls.NewG2().HashToCurve(message, domain)
+	if err != nil {
+		// e.g. when the domain is too long. Maybe change to panic if never due to a usage error?
+		fmt.Print("Failed to hash message to point")
+		return false
+	}
+
+	// 7. C1 = pairing(Q, xP)
+	eng := kbls.NewEngine()
+	eng.AddPair(xP, Q)
+	// 8. C2 = pairing(R, P)
+	P := &kbls.G1One
+	eng.AddPairInv(P, R)
+	// 9. If C1 != C2, return INVALID
+	return !eng.Check()
+}
+
