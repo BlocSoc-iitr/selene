@@ -677,15 +677,15 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 		} else {
 			syncCommittee = in.Store.NextSyncCommitee
 		}
-		pks, err := utils.GetParticipatingKeys(syncCommittee, [64]byte(update.SyncAggregate.SyncCommitteeBits))
+		_, err := utils.GetParticipatingKeys(syncCommittee, [64]byte(update.SyncAggregate.SyncCommitteeBits))
 		if err != nil {
 			return fmt.Errorf("failed to get participating keys: %w", err)
 		}
 
 		forkVersion := utils.CalculateForkVersion(&forks, update.SignatureSlot)
-		forkDataRoot := utils.ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(in.Config.Chain.GenesisRoot))
+		forkDataRoot := utils.ComputeForkDataRoot(forkVersion, consensus_core.Bytes32(genesisRoots))
 
-		if !verifySyncCommitteeSignature(pks, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
+		if !verifySyncCommitteeSignature(syncCommittee.Pubkeys, &update.AttestedHeader, &update.SyncAggregate, forkDataRoot) {
 			return ErrInvalidSignature
 		}
 
@@ -930,12 +930,10 @@ func verifySyncCommitteeSignature(
 		return false
 	}
 
-	err := bls.FastAggregateVerify(collectedPks, signingRoot[:], &sig)
-	if err {
-		fmt.Println("signature verification failed")
-		return false
-	}
-	return true
+	
+
+	return utils.FastAggregateVerify(collectedPks, signingRoot[:], &sig)
+	
 }
 
 func ComputeCommitteeSignRoot(header *beacon.Header, fork consensus_core.Bytes32) consensus_core.Bytes32 {
@@ -1175,6 +1173,6 @@ func toGethSyncCommittee(committee *consensus_core.SyncCommittee) *beacon.Serial
 	for i, key := range jsoncommittee.Pubkeys {
 		copy(s[i*48:], key[:])
 	}
-	copy(s[512*48:], jsoncommittee.Aggregate[:])
+copy(s[512*48:], jsoncommittee.Aggregate[:])
 	return &s
 }
