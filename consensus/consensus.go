@@ -666,7 +666,7 @@ func (in *Inner) verify_generic_update(update *GenericUpdate, expectedCurrentSlo
 			if !isNextCommitteeProofValid(&update.AttestedHeader, update.NextSyncCommittee, *update.NextSyncCommitteeBranch) {
 				return ErrInvalidNextSyncCommitteeProof
 			}
-		} else if (update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch == nil) && (update.NextSyncCommittee == nil && update.NextSyncCommitteeBranch != nil) {
+		} else if (update.NextSyncCommittee != nil && update.NextSyncCommitteeBranch == nil) || (update.NextSyncCommittee == nil && update.NextSyncCommitteeBranch != nil) {
 			return ErrInvalidNextSyncCommitteeProof
 		}
 
