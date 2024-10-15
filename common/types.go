@@ -9,38 +9,39 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
+	"strconv"
+	Common"github.com/ethereum/go-ethereum/common"
 )
 
 type Address struct {
 	Addr [20]byte
 }
-
+//Changed address of Miner to Common.Address instead of Address
 type Block struct {
-	Number           uint64
-	BaseFeePerGas    uint256.Int
-	Difficulty       uint256.Int
-	ExtraData        []byte
+	Number            uint64
+	BaseFeePerGas  uint256.Int
+	Difficulty        uint256.Int
+	Extra_data        []byte
 	GasLimit         uint64
-	GasUsed          uint64
-	Hash             [32]byte
-	LogsBloom        []byte
-	Miner            Address
-	MixHash          [32]byte
-	Nonce            string
-	ParentHash       [32]byte
-	ReceiptsRoot     [32]byte
-	Sha3Uncles       [32]byte
-	Size             uint64
-	StateRoot        [32]byte
-	Timestamp        uint64
-	TotalDifficulty  uint64
-	Transactions     Transactions
-	TransactionsRoot [32]byte
-	Uncles           [][32]byte
-	BlobGasUsed      *uint64
-	ExcessBlobGas    *uint64
+	Gas_used          uint64
+	Hash              [32]byte
+	Logs_bloom        []byte
+	Miner             Common.Address
+	Mix_hash          [32]byte
+	Nonce             string
+	Parent_hash       [32]byte
+	Receipts_root     [32]byte
+	Sha3_uncles       [32]byte
+	Size              uint64
+	State_root        [32]byte
+	Timestamp         uint64
+	Total_difficulty  uint64
+	Transactions      Transactions
+	Transactions_root [32]byte
+	Uncles            [][32]byte
 }
 
+// an enum having 2 types- how to implement??
 type Transactions struct {
 	Hashes [][32]byte
 	Full   []Transaction // transaction needs to be defined
