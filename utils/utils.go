@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/hex"
-
+        "net/url"
 	"strings"
 
 	"bytes"
@@ -278,4 +278,8 @@ func BranchToNodes(branch []consensus_core.Bytes32) ([][]byte, error) {
 		nodes[i] = Bytes32ToNode(b32)
 	}
 	return nodes, nil
+}
+func IsURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }

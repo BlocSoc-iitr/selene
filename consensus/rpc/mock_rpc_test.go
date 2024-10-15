@@ -1,4 +1,5 @@
 package rpc
+
 import (
 	"encoding/json"
 	"os"
@@ -7,6 +8,7 @@ import (
 
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 )
+
 func TestNewMockRpc(t *testing.T) {
 	path := "/tmp/testdata"
 	mockRpc := NewMockRpc(path)
@@ -33,7 +35,7 @@ func TestGetBootstrap(t *testing.T) {
 		t.Fatalf("Failed to write mock bootstrap file: %v", err)
 	}
 	mockRpc := NewMockRpc(tempDir)
-	bootstrap, err := mockRpc.GetBootstrap([]byte{})
+	bootstrap, err := mockRpc.GetBootstrap([32]byte{})
 	if err != nil {
 		t.Fatalf("GetBootstrap failed: %v", err)
 	}
