@@ -4,6 +4,7 @@ package consensus
 // uses rpc
 // uses config for networks
 // uses common for datatypes
+
 import (
 	"bytes"
 	"encoding/hex"
