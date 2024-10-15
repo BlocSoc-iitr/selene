@@ -3,7 +3,6 @@ package config
 import (
 	"testing"
 )
-
 func TestCorrectDefaultBaseConfig(t *testing.T) {
 	baseConfig := BaseConfig{}
 

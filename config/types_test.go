@@ -2,8 +2,8 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"testing"
+	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 )
 
 func TestChainConfigMarshalUnmarshal(t *testing.T) {

@@ -14,8 +14,9 @@ func (e BlockNotFoundError) Error() string {
 	return fmt.Sprintf("block not available: %s", e.Block)
 }
 
+
 // need to confirm how such primitive types will be imported
-type hash [32]byte
+type hash [32]byte;
 
 type SlotNotFoundError struct {
 	slot hash

@@ -1,12 +1,10 @@
 package consensus
-
 import (
 	"errors"
 	"github.com/BlocSoc-iitr/selene/config"
 	"os"
 	"path/filepath"
 )
-
 type Database interface {
 	New(cfg *config.Config) (Database, error)
 	SaveCheckpoint(checkpoint []byte) error
@@ -16,7 +14,6 @@ type FileDB struct {
 	DataDir           string
 	defaultCheckpoint [32]byte
 }
-
 func (f *FileDB) New(cfg *config.Config) (Database, error) {
 	if cfg.DataDir == nil || *cfg.DataDir == "" {
 		return nil, errors.New("data directory is not set in the config")
@@ -46,11 +43,9 @@ func (f *FileDB) LoadCheckpoint() ([]byte, error) {
 	}
 	return f.defaultCheckpoint[:], nil
 }
-
 type ConfigDB struct {
 	checkpoint [32]byte
 }
-
 func (c *ConfigDB) New(cfg *config.Config) (Database, error) {
 	checkpoint := cfg.DefaultCheckpoint
 	if cfg.DataDir == nil {

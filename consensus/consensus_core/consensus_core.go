@@ -1,6 +1,12 @@
 package consensus_core
 
-type Transaction = [1073741824]byte
+import (
+	"bytes"
+
+	"github.com/BlocSoc-iitr/selene/consensus/types"
+	"github.com/ugorji/go/codec"
+)
+
 type Bytes32 [32]byte
 type BLSPubKey [48]byte
 type Address [20]byte
@@ -8,202 +14,223 @@ type LogsBloom [256]byte
 type SignatureBytes [96]byte
 
 type BeaconBlock struct {
-	Slot          uint64          `json:"slot"`
-	ProposerIndex uint64          `json:"proposer_index"`
-	ParentRoot    Bytes32         `json:"parent_root"`
-	StateRoot     Bytes32         `json:"state_root"`
-	Body          BeaconBlockBody `json:"body"`
+	Slot          uint64
+	ProposerIndex uint64
+	ParentRoot    Bytes32
+	StateRoot     Bytes32
+	Body          BeaconBlockBody
 }
 
 type Eth1Data struct {
-	DepositRoot  Bytes32 `json:"deposit_root"`
-	DepositCount uint64  `json:"deposit_count"`
-	BlockHash    Bytes32 `json:"block_hash"`
+	DepositRoot  Bytes32
+	DepositCount uint64
+	BlockHash    Bytes32
 }
 
 type ProposerSlashing struct {
-	SignedHeader1 SignedBeaconBlockHeader `json:"signed_header_1"`
-	SignedHeader2 SignedBeaconBlockHeader `json:"signed_header_2"`
+	SignedHeader1 SignedBeaconBlockHeader
+	SignedHeader2 SignedBeaconBlockHeader
 }
 
 type SignedBeaconBlockHeader struct {
-	Message   BeaconBlockHeader `json:"message"`
-	Signature SignatureBytes    `json:"signature"`
+	Message   BeaconBlockHeader
+	Signature SignatureBytes
 }
 
 type BeaconBlockHeader struct {
-	Slot          uint64  `json:"slot"`
-	ProposerIndex uint64  `json:"proposer_index"`
-	ParentRoot    Bytes32 `json:"parent_root"`
-	StateRoot     Bytes32 `json:"state_root"`
-	BodyRoot      Bytes32 `json:"body_root"`
+	Slot          uint64
+	ProposerIndex uint64
+	ParentRoot    Bytes32
+	StateRoot     Bytes32
+	BodyRoot      Bytes32
 }
 
 type AttesterSlashing struct {
-	Attestation1 IndexedAttestation `json:"attestation_1"`
-	Attestation2 IndexedAttestation `json:"attestation_2"`
+	Attestation1 IndexedAttestation
+	Attestation2 IndexedAttestation
 }
 
 type IndexedAttestation struct {
-	AttestingIndices [2048]uint64    `json:"attesting_indices"` // Dynamic slice
-	Data             AttestationData `json:"data"`
-	Signature        SignatureBytes  `json:"signature"`
+	AttestingIndices [2048]uint64
+	Data             AttestationData
+	Signature        SignatureBytes
 }
 
 type AttestationData struct {
-	Slot            uint64     `json:"slot"`
-	Index           uint64     `json:"index"`
-	BeaconBlockRoot Bytes32    `json:"beacon_block_root"`
-	Source          Checkpoint `json:"source"`
-	Target          Checkpoint `json:"target"`
+	Slot            uint64
+	Index           uint64
+	BeaconBlockRoot Bytes32
+	Source          Checkpoint
+	Target          Checkpoint
 }
 
 type Checkpoint struct {
-	Epoch uint64  `json:"epoch"`
-	Root  Bytes32 `json:"root"`
+	Epoch uint64
+	Root  Bytes32
 }
 
 type Bitlist []bool
 
 type Attestation struct {
-	AggregationBits Bitlist         `json:"aggregation_bits"`
-	Data            AttestationData `json:"data"`
-	Signature       SignatureBytes  `json:"signature"`
+	AggregationBits Bitlist `ssz-max:"2048"`
+	Data            AttestationData
+	Signature       SignatureBytes
 }
 
 type Deposit struct {
-	Proof [33]Bytes32 `json:"proof"` // Dynamic slice
-	Data  DepositData `json:"data"`
+	Proof [33]Bytes32 // fixed size array
+	Data  DepositData
 }
 
 type DepositData struct {
-	Pubkey                BLSPubKey      `json:"pubkey"`
-	WithdrawalCredentials Bytes32        `json:"withdrawal_credentials"`
-	Amount                uint64         `json:"amount"`
-	Signature             SignatureBytes `json:"signature"`
+	Pubkey                [48]byte
+	WithdrawalCredentials Bytes32
+	Amount                uint64
+	Signature             SignatureBytes
 }
 
 type SignedVoluntaryExit struct {
-	Message   VoluntaryExit  `json:"message"`
-	Signature SignatureBytes `json:"signature"`
+	Message   VoluntaryExit
+	Signature SignatureBytes
 }
 
 type VoluntaryExit struct {
-	Epoch          uint64 `json:"epoch"`
-	ValidatorIndex uint64 `json:"validator_index"`
+	Epoch          uint64
+	ValidatorIndex uint64
 }
 
 type SyncAggregate struct {
-	SyncCommitteeBits      []byte         `json:"sync_committee_bits"`
-	SyncCommitteeSignature SignatureBytes `json:"sync_committee_signature"`
+	SyncCommitteeBits      [64]byte
+	SyncCommitteeSignature SignatureBytes
 }
 
 type Withdrawal struct {
-	Index          uint64  `json:"index"`
-	ValidatorIndex uint64  `json:"validator_index"`
-	Address        Address `json:"address"`
-	Amount         uint64  `json:"amount"`
+	Index          uint64
+	ValidatorIndex uint64
+	Address        Address
+	Amount         uint64
 }
 
 type ExecutionPayload struct {
-	ParentHash    Bytes32       `json:"parent_hash"`
-	FeeRecipient  Address       `json:"fee_recipient"`
-	StateRoot     Bytes32       `json:"state_root"`
-	ReceiptsRoot  Bytes32       `json:"receipts_root"`
-	LogsBloom     LogsBloom     `json:"logs_bloom"`
-	PrevRandao    Bytes32       `json:"prev_randao"`
-	BlockNumber   uint64        `json:"block_number"`
-	GasLimit      uint64        `json:"gas_limit"`
-	GasUsed       uint64        `json:"gas_used"`
-	Timestamp     uint64        `json:"timestamp"`
-	ExtraData     []byte        `json:"extra_data"`
-	BaseFeePerGas uint64        `json:"base_fee_per_gas"`
-	BlockHash     Bytes32       `json:"block_hash"`
-	Transactions  []Transaction `json:"transactions"`
-	Withdrawals   *[]Withdrawal `json:"withdrawals"`     //Only capella and deneb
-	BlobGasUsed   *uint64       `json:"blob_gas_used"`   // Only deneb
-	ExcessBlobGas *uint64       `json:"excess_blob_gas"` // Only deneb
+	ParentHash    Bytes32
+	FeeRecipient  Address
+	StateRoot     Bytes32
+	ReceiptsRoot  Bytes32
+	LogsBloom     LogsBloom
+	PrevRandao    Bytes32
+	BlockNumber   uint64
+	GasLimit      uint64
+	GasUsed       uint64
+	Timestamp     uint64
+	ExtraData     [32]byte
+	BaseFeePerGas uint64
+	BlockHash     Bytes32
+	Transactions  []types.Transaction `ssz-max:"1048576"`
+	Withdrawals   []types.Withdrawal  `ssz-max:"16"`
+	BlobGasUsed   *uint64             // Deneb-specific field, use pointer for optionality
+	ExcessBlobGas *uint64             // Deneb-specific field, use pointer for optionality
 }
 
 type SignedBlsToExecutionChange struct {
-	Message   BlsToExecutionChange `json:"message"`
-	Signature SignatureBytes       `json:"signature"`
+	Message   BlsToExecutionChange
+	Signature SignatureBytes
 }
 
 type BlsToExecutionChange struct {
-	ValidatorIndex uint64    `json:"validator_index"`
-	FromBlsPubkey  BLSPubKey `json:"from_bls_pubkey"`
+	ValidatorIndex uint64
+	FromBlsPubkey  [48]byte
 }
 
 // BeaconBlockBody represents the body of a beacon block.
 type BeaconBlockBody struct {
-	RandaoReveal          SignatureBytes                `json:"randao_reveal"`
-	Eth1Data              Eth1Data                      `json:"eth1_data"`
-	Graffiti              Bytes32                       `json:"graffiti"`
-	ProposerSlashings     []ProposerSlashing            `json:"proposer_slashings"`
-	AttesterSlashings     []AttesterSlashing            `json:"attester_slashings"`
-	Attestations          []Attestation                 `json:"attestations"`
-	Deposits              []Deposit                     `json:"deposits"`
-	VoluntaryExits        []SignedVoluntaryExit         `json:"voluntary_exits"`
-	SyncAggregate         SyncAggregate                 `json:"sync_aggregate"`
-	ExecutionPayload      ExecutionPayload              `json:"execution_payload"`
-	BlsToExecutionChanges *[]SignedBlsToExecutionChange `json:"bls_to_execution_changes"` //Only capella and deneb
-	BlobKzgCommitments    *[][]byte                     `json:"blob_kzg_commitments"`     // Dynamic slice
-	Hash                  []byte
+	RandaoReveal          SignatureBytes
+	Eth1Data              Eth1Data
+	Graffiti              Bytes32
+	ProposerSlashings     []ProposerSlashing    `ssz-max:"16"`
+	AttesterSlashings     []AttesterSlashing    `ssz-max:"2"`
+	Attestations          []Attestation         `ssz-max:"128"`
+	Deposits              []Deposit             `ssz-max:"16"`
+	VoluntaryExits        []SignedVoluntaryExit `ssz-max:"16"`
+	SyncAggregate         SyncAggregate
+	ExecutionPayload      ExecutionPayload
+	BlsToExecutionChanges []SignedBlsToExecutionChange `ssz-max:"16"`
+	BlobKzgCommitments    [][48]byte                   `ssz-max:"4096"`
 }
 
 type Header struct {
-	Slot          uint64  `json:"slot"`
-	ProposerIndex uint64  `json:"proposer_index"`
-	ParentRoot    Bytes32 `json:"parent_root"`
-	StateRoot     Bytes32 `json:"state_root"`
-	BodyRoot      Bytes32 `json:"body_root"`
+	Slot          uint64
+	ProposerIndex uint64
+	ParentRoot    Bytes32
+	StateRoot     Bytes32
+	BodyRoot      Bytes32
 }
 
 type SyncCommittee struct {
-	Pubkeys         []BLSPubKey `json:"pubkeys"`
-	AggregatePubkey BLSPubKey   `json:"aggregate_pubkey"`
+	Pubkeys         [512]BLSPubKey
+	AggregatePubkey BLSPubKey
 }
 
 type Update struct {
-	AttestedHeader          Header        `json:"attested_header"`
-	NextSyncCommittee       SyncCommittee `json:"next_sync_committee"`
-	NextSyncCommitteeBranch []Bytes32     `json:"next_sync_committee_branch"`
-	FinalizedHeader         Header        `json:"finalized_header"`
-	FinalityBranch          []Bytes32     `json:"finality_branch"`
-	SyncAggregate           SyncAggregate `json:"sync_aggregate"`
-	SignatureSlot           uint64        `json:"signature_slot"`
+	AttestedHeader          Header
+	NextSyncCommittee       SyncCommittee
+	NextSyncCommitteeBranch []Bytes32
+	FinalizedHeader         Header
+	FinalityBranch          []Bytes32
+	SyncAggregate           SyncAggregate
+	SignatureSlot           uint64
 }
 
 type FinalityUpdate struct {
-	AttestedHeader  Header        `json:"attested_header"`
-	FinalizedHeader Header        `json:"finalized_header"`
-	FinalityBranch  []Bytes32     `json:"finality_branch"`
-	SyncAggregate   SyncAggregate `json:"sync_aggregate"`
-	SignatureSlot   uint64        `json:"signature_slot"`
+	AttestedHeader  Header
+	FinalizedHeader Header
+	FinalityBranch  []Bytes32
+	SyncAggregate   SyncAggregate
+	SignatureSlot   uint64
 }
 
 type OptimisticUpdate struct {
-	AttestedHeader Header        `json:"attested_header"`
-	SyncAggregate  SyncAggregate `json:"sync_aggregate"`
-	SignatureSlot  uint64        `json:"signature_slot"`
+	AttestedHeader Header
+	SyncAggregate  SyncAggregate
+	SignatureSlot  uint64
 }
 
 type Bootstrap struct {
-	Header                     Header        `json:"header"`
-	CurrentSyncCommittee       SyncCommittee `json:"current_sync_committee"`
-	CurrentSyncCommitteeBranch []Bytes32     `json:"current_sync_committee_branch"`
+	Header                     Header
+	CurrentSyncCommittee       SyncCommittee
+	CurrentSyncCommitteeBranch []Bytes32
 }
 
 type Fork struct {
 	Epoch       uint64 `json:"epoch"`
 	ForkVersion []byte `json:"fork_version"`
 }
-
 type Forks struct {
 	Genesis   Fork `json:"genesis"`
 	Altair    Fork `json:"altair"`
 	Bellatrix Fork `json:"bellatrix"`
 	Capella   Fork `json:"capella"`
 	Deneb     Fork `json:"deneb"`
+}
+
+// ToBytes serializes the Header struct to a byte slice.
+func (h *Header) ToBytes() []byte {
+	var buf bytes.Buffer
+	enc := codec.NewEncoder(&buf, new(codec.JsonHandle))
+	_ = enc.Encode(h) // Ignore error
+	return buf.Bytes()
+}
+
+func (b *BeaconBlockBody) ToBytes() []byte {
+	var buf bytes.Buffer
+	enc := codec.NewEncoder(&buf, new(codec.JsonHandle))
+	_ = enc.Encode(b) // Ignore error
+	return buf.Bytes()
+}
+
+// ToBytes serializes the SyncCommittee struct to a byte slice.
+func (sc *SyncCommittee) ToBytes() []byte {
+	var buf bytes.Buffer
+	enc := codec.NewEncoder(&buf, new(codec.JsonHandle))
+	_ = enc.Encode(sc) // Ignore error
+	return buf.Bytes()
 }
