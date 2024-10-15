@@ -1,14 +1,16 @@
 package rpc
+
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
+
 func TestNewNimbusRpc(t *testing.T) {
 	rpcURL := "http://example.com"
 	nimbusRpc := NewNimbusRpc(rpcURL)
@@ -19,10 +21,16 @@ func TestNimbusGetBootstrap(t *testing.T) {
 	expectedPath := fmt.Sprintf("/eth/v1/beacon/light_client/bootstrap/0x%x", blockRoot)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, expectedPath, r.URL.Path)
-		response := BootstrapResponse{
-			Data: consensus_core.Bootstrap{
-				Header: consensus_core.Header{
-					Slot: 1000,
+		response := map[string]interface{}{
+			"data": map[string]interface{}{
+				"header": map[string]interface{}{
+					"beacon": map[string]interface{}{
+						"slot":           "1000",
+						"proposer_index": "12345",
+						"parent_root":    "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+						"state_root":     "0x2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
+						"body_root":      "0x4142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60",
+					},
 				},
 			},
 		}
@@ -36,12 +44,39 @@ func TestNimbusGetBootstrap(t *testing.T) {
 	assert.Equal(t, uint64(1000), bootstrap.Header.Slot)
 }
 func TestNimbusGetUpdates(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Test panicked: %v", r)
+		}
+	}()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/eth/v1/beacon/light_client/updates", r.URL.Path)
 		assert.Equal(t, "start_period=1000&count=5", r.URL.RawQuery)
-		response := UpdateResponse{
-			{Data: consensus_core.Update{AttestedHeader: consensus_core.Header{Slot: 1000}}},
-			{Data: consensus_core.Update{AttestedHeader: consensus_core.Header{Slot: 1001}}},
+		response := []map[string]interface{}{
+			{
+				"data": map[string]interface{}{
+					"attested_header": map[string]interface{}{
+						"beacon": map[string]interface{}{
+							"slot":           "1",
+							"proposer_index": "12345",
+							"parent_root":    "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+							"state_root":     "0x2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
+							"body_root":      "0x4142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60",
+						},
+					},
+					"signature_slot": "1",
+				},
+			},
+			{
+				"data": map[string]interface{}{
+					"attested_header": map[string]interface{}{
+						"beacon": map[string]interface{}{
+							"slot": "2",
+						},
+					},
+					"signature_slot": "2",
+				},
+			},
 		}
 		err := json.NewEncoder(w).Encode(response)
 		require.NoError(t, err)
@@ -51,16 +86,23 @@ func TestNimbusGetUpdates(t *testing.T) {
 	updates, err := nimbusRpc.GetUpdates(1000, 5)
 	assert.NoError(t, err)
 	assert.Len(t, updates, 2)
-	assert.Equal(t, uint64(1000), updates[0].AttestedHeader.Slot)
-	assert.Equal(t, uint64(1001), updates[1].AttestedHeader.Slot)
+	assert.Equal(t, uint64(1), updates[0].AttestedHeader.Slot)
+	assert.Equal(t, uint64(2), updates[1].AttestedHeader.Slot)
 }
 func TestNimbusGetFinalityUpdate(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/eth/v1/beacon/light_client/finality_update", r.URL.Path)
-		response := FinalityUpdateResponse{
-			Data: consensus_core.FinalityUpdate{
-				FinalizedHeader: consensus_core.Header{
-					Slot: 2000,
+		response := map[string]interface{}{
+			"data": map[string]interface{}{
+				"attested_header": map[string]interface{}{
+					"beacon": map[string]interface{}{
+						"slot": "2000",
+					},
+				},
+				"finalized_header": map[string]interface{}{
+					"beacon": map[string]interface{}{
+						"slot": "2000",
+					},
 				},
 			},
 		}
@@ -76,9 +118,14 @@ func TestNimbusGetFinalityUpdate(t *testing.T) {
 func TestNimbusGetOptimisticUpdate(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/eth/v1/beacon/light_client/optimistic_update", r.URL.Path)
-		response := OptimisticUpdateResponse{
-			Data: consensus_core.OptimisticUpdate{
-				SignatureSlot: 3000,
+		response := map[string]interface{}{
+			"data": map[string]interface{}{
+				"attested_header": map[string]interface{}{
+					"beacon": map[string]interface{}{
+						"slot": "3000",
+					},
+				},
+				"signature_slot": "3000",
 			},
 		}
 		err := json.NewEncoder(w).Encode(response)

@@ -3,11 +3,12 @@ package execution
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
+	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
-	"github.com/BlocSoc-iitr/selene/utils"
+	"reflect"
 )
+
 type Account struct {
 	Balance     *big.Int
 	Nonce       uint64
@@ -24,43 +25,44 @@ type CallOpts struct {
 	Value    *big.Int        `json:"value,omitempty"`
 	Data     []byte          `json:"data,omitempty"`
 }
+
 func (c *CallOpts) String() string {
 	return fmt.Sprintf("CallOpts{From: %v, To: %v, Gas: %v, GasPrice: %v, Value: %v, Data: 0x%x}",
 		c.From, c.To, c.Gas, c.GasPrice, c.Value, c.Data)
 }
 
 func (c *CallOpts) Serialize() ([]byte, error) {
-    serialized := make(map[string]interface{})
-    v := reflect.ValueOf(*c)
-    t := v.Type()
+	serialized := make(map[string]interface{})
+	v := reflect.ValueOf(*c)
+	t := v.Type()
 
-    for i := 0; i < v.NumField(); i++ {
-        field := v.Field(i)
-        fieldName := t.Field(i).Name
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldName := t.Field(i).Name
 
-        if !field.IsNil() {
-            var value interface{}
-            var err error
+		if !field.IsNil() {
+			var value interface{}
+			var err error
 
-            switch field.Interface().(type) {
-            case *common.Address:
-                value = utils.Address_to_hex_string(*field.Interface().(*common.Address))
-            case *big.Int:
-                value = utils.U64_to_hex_string(field.Interface().(*big.Int).Uint64())
-            case []byte:
-                value, err = utils.Bytes_serialize(field.Interface().([]byte))
-                if err != nil {
-                    return nil, fmt.Errorf("error serializing %s: %w", fieldName, err)
-                }
-            default:
-                return nil, fmt.Errorf("unsupported type for field %s", fieldName)
-            }
+			switch field.Interface().(type) {
+			case *common.Address:
+				value = utils.Address_to_hex_string(*field.Interface().(*common.Address))
+			case *big.Int:
+				value = utils.U64_to_hex_string(field.Interface().(*big.Int).Uint64())
+			case []byte:
+				value, err = utils.Bytes_serialize(field.Interface().([]byte))
+				if err != nil {
+					return nil, fmt.Errorf("error serializing %s: %w", fieldName, err)
+				}
+			default:
+				return nil, fmt.Errorf("unsupported type for field %s", fieldName)
+			}
 
-            serialized[fieldName] = value
-        }
-    }
+			serialized[fieldName] = value
+		}
+	}
 
-    return json.Marshal(serialized)
+	return json.Marshal(serialized)
 }
 
 func (c *CallOpts) Deserialize(data []byte) error {

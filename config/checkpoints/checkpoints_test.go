@@ -3,11 +3,11 @@ package checkpoints
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/BlocSoc-iitr/selene/config"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"io"
-	"github.com/BlocSoc-iitr/selene/config"
 )
 
 type CustomTransport struct {
@@ -289,7 +289,6 @@ func TestGetHealthyFallbackServices(t *testing.T) {
 	}
 }
 
-
 func equalNetworks(a, b []config.Network) bool {
 	if len(a) != len(b) {
 		return false
@@ -317,4 +316,3 @@ func equalStringSlices(a, b []string) bool {
 	}
 	return true
 }
-
