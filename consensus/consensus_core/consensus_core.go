@@ -13,6 +13,7 @@ type BeaconBlock struct {
 	ParentRoot    Bytes32         `json:"parent_root"`
 	StateRoot     Bytes32         `json:"state_root"`
 	Body          BeaconBlockBody `json:"body"`
+	Hash          []byte          
 }
 
 type Eth1Data struct {
@@ -119,7 +120,7 @@ type ExecutionPayload struct {
 	ExtraData     []byte        `json:"extra_data"`
 	BaseFeePerGas uint64        `json:"base_fee_per_gas"`
 	BlockHash     Bytes32       `json:"block_hash"`
-	Transactions  []Transaction `json:"transactions"`
+	Transactions  [][]byte      `json:"transactions"`
 	Withdrawals   *[]Withdrawal `json:"withdrawals"`     //Only capella and deneb
 	BlobGasUsed   *uint64       `json:"blob_gas_used"`   // Only deneb
 	ExcessBlobGas *uint64       `json:"excess_blob_gas"` // Only deneb
@@ -149,7 +150,6 @@ type BeaconBlockBody struct {
 	ExecutionPayload      ExecutionPayload              `json:"execution_payload"`
 	BlsToExecutionChanges *[]SignedBlsToExecutionChange `json:"bls_to_execution_changes"` //Only capella and deneb
 	BlobKzgCommitments    *[][]byte                     `json:"blob_kzg_commitments"`     // Dynamic slice
-	Hash                  []byte
 }
 
 type Header struct {
