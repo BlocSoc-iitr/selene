@@ -310,3 +310,41 @@ func TestVerifyCheckpointAgeInvalid(t *testing.T) {
 		t.Fatalf("failed to get client: %v", err)
 	}
 }
+
+func TestSendBlocks(t *testing.T) {
+	//Get the client
+	client, err := GetClient(false, true)
+	if err != nil {
+		t.Fatalf("failed to get client: %v", err)
+	}
+
+	errAdvancongClient := client.advance()
+	if errAdvancongClient != nil {
+		t.Fatalf("failed to advance client: %v", errAdvancongClient)
+	}
+	//Send the blocks
+	errSendingBlock := client.send_blocks()
+	if errSendingBlock != nil {
+		t.Fatalf("failed to send blocks: %v", errSendingBlock)
+	}
+
+}
+
+func TestGetPayloads(t *testing.T) {
+	//Get the client
+	client, err := GetClient(false, true)
+	if err != nil {
+		t.Fatalf("failed to get client: %v", err)
+	}
+
+	//Fetch the payloads
+	payloads, err := client.Get_payloads(7109344, 7109344)
+	if err != nil {
+		t.Fatalf("failed to get payloads: %v", err)
+	}
+
+	//Ensure we have payloads
+	if len(payloads) == 0 {
+		t.Fatalf("no payloads fetched")
+	}
+}
