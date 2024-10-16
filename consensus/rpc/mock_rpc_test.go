@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"encoding/json"
-	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
 	"os"
 	"path/filepath"
 	"testing"
@@ -180,30 +179,37 @@ func TestGetBlock(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
+
 	blocksDir := filepath.Join(tempDir, "blocks")
 	err = os.Mkdir(blocksDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create blocks directory: %v", err)
 	}
-	mockBlock := BeaconBlockResponse{
-		Data: struct {
-			Message consensus_core.BeaconBlock
-		}{
-			Message: consensus_core.BeaconBlock{
-				Slot: 4000,
+
+	mockBlock := map[string]interface{}{
+		"data": map[string]interface{}{
+			"message": map[string]interface{}{
+				"slot": "4000",
 			},
 		},
 	}
-	blockJSON, _ := json.Marshal(mockBlock)
+
+	blockJSON, err := json.Marshal(mockBlock)
+	if err != nil {
+		t.Fatalf("Failed to marshal mock block: %v", err)
+	}
+
 	err = os.WriteFile(filepath.Join(blocksDir, "4000.json"), blockJSON, 0644)
 	if err != nil {
 		t.Fatalf("Failed to write mock block file: %v", err)
 	}
+
 	mockRpc := NewMockRpc(tempDir)
 	block, err := mockRpc.GetBlock(4000)
 	if err != nil {
 		t.Fatalf("GetBlock failed: %v", err)
 	}
+
 	if block.Slot != 4000 {
 		t.Errorf("Expected block slot to be 4000, got %d", block.Slot)
 	}
