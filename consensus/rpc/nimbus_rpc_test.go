@@ -3,12 +3,12 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewNimbusRpc(t *testing.T) {
@@ -140,10 +140,10 @@ func TestNimbusGetOptimisticUpdate(t *testing.T) {
 func TestNimbusGetBlock(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/eth/v2/beacon/blocks/4000", r.URL.Path)
-		response := BeaconBlockResponse{
-			Data: BeaconBlockData{
-				Message: consensus_core.BeaconBlock{
-					Slot: 4000,
+		response := map[string]interface{}{
+			"data": map[string]interface{}{
+				"message": map[string]interface{}{
+					"slot": "4000",
 				},
 			},
 		}
