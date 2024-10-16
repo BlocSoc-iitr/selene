@@ -3,6 +3,7 @@ package consensus_core
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -22,8 +23,6 @@ func (o *OptimisticUpdate) UnmarshalJSON(data []byte) error {
 func (b *Bootstrap) UnmarshalJSON(data []byte) error {
 	return unmarshalJSON(data, b)
 }
-
-
 
 func (f *Forks) UnmarshalJSON(data []byte) error {
 	var serialized map[string]interface{}
@@ -238,45 +237,151 @@ func unmarshalJSON(data []byte, v interface{}) error {
 }
 
 func (b *BeaconBlock) UnmarshalJSON(data []byte) error {
-	// Define a temporary structure to handle both string and number slots.
-	var tmp struct {
-		Slot json.RawMessage `json:"slot"`
-	}
+	b.Hash = data
+	return unmarshalJSON(data, b)
+}
 
-	// Unmarshal into the temporary struct.
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return fmt.Errorf("error unmarshalling into temporary struct: %w", err)
-	}
+func (b *BeaconBlockBody) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, b)
+}
 
-	// If it wasn't a string, try unmarshalling as a number.
-	var slotNum uint64
-	if err := json.Unmarshal(tmp.Slot, &slotNum); err == nil {
-		b.Slot = slotNum
-		return nil
-	}
+func (e *Eth1Data) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, e)
+}
 
-	return fmt.Errorf("slot field is not a valid string or number")
+func (a *Attestation) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, a)
+}
+
+func (a *AttesterSlashing) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, a)
+}
+
+func (i *IndexedAttestation) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, i)
+}
+
+func (p *ProposerSlashing) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, p)
+}
+
+func (s *SignedBeaconBlockHeader) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, s)
+}
+
+func (c *Checkpoint) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, c)
+}
+
+func (b *Bitlist) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, b)
+}
+
+func (d *Deposit) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, d)
+}
+
+func (d *DepositData) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, d)
+}
+
+func (d *SignedVoluntaryExit) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, d)
+}
+
+func (v *VoluntaryExit) UnmarshalJSON(data []byte) error {
+
+	return unmarshalJSON(data, v)
+}
+
+func (e *ExecutionPayload) UnmarshalJSON(data []byte) error {
+
+	return unmarshalJSON(data, e)
+}
+
+func (s *SignedBlsToExecutionChange) UnmarshalJSON(data []byte) error {
+
+	return unmarshalJSON(data, s)
+}
+
+func (a *AttestationData) UnmarshalJSON(data []byte) error {
+
+	return unmarshalJSON(data, a)
+}
+
+func (a *Address) UnmarshalJSON(data []byte) error {
+	address, err := Hex_str_to_bytes(string(data))
+	if err != nil {
+		return err
+	}
+	*a = Address(address[:])
+	return nil
+}
+
+func (w *Withdrawal) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, w)
+
+}
+
+func (b *BlsToExecutionChange) UnmarshalJSON(data []byte) error {
+	return unmarshalJSON(data, b)
 }
 
 func setFieldValue(field reflect.Value, value interface{}) error {
+	if field.Kind() == reflect.Ptr {
+		field.Set(reflect.New(field.Type().Elem()))
+		field = field.Elem()
+	}
+
 	switch field.Kind() {
 	case reflect.Struct:
-		// Marshal and unmarshal for struct types
 		rawJSON, err := json.Marshal(value)
 		if err != nil {
-			return err
+			return errors.New("error marshalling struct")
 		}
 		return json.Unmarshal(rawJSON, field.Addr().Interface())
 
 	case reflect.Slice:
-		if field.Type().Elem().Kind() == reflect.Uint8 {
-			// For Bytes32 conversion
-			dataSlice := value.([]interface{})
-			for _, b := range dataSlice {
-				field.Set(reflect.Append(field, reflect.ValueOf(Bytes32(hexDecode(b.(string)))))) // Adjust hexDecode as needed
+		// Handling 2D slices (e.g., [][]byte)
+		if field.Type().Elem().Kind() == reflect.Slice {
+			sliceValue := reflect.ValueOf(value)
+			if sliceValue.Kind() != reflect.Slice {
+				return fmt.Errorf("expected slice for 2D slice input, got %T", value)
+			}
+
+			// Ensure the length matches
+			if sliceValue.Len() != field.Len() {
+				field.Set(reflect.MakeSlice(field.Type(), sliceValue.Len(), sliceValue.Len()))
+			}
+
+			// Iterate over each element and set values
+			for i := 0; i < sliceValue.Len(); i++ {
+				innerValue := sliceValue.Index(i).Interface()
+				err := setFieldValue(field.Index(i), innerValue)
+				if err != nil {
+					return fmt.Errorf("error setting value for element %d: %w", i, err)
+				}
 			}
 			return nil
 		}
+
+		// For slices of bytes (e.g., []byte)
+		if field.Type().Elem().Kind() == reflect.Uint8 {
+			dataSlice := value.(string)
+			bytesArray, err := Hex_str_to_bytes(dataSlice)
+			if err != nil {
+				return errors.New("error decoding byte slice")
+			}
+			field.SetBytes(bytesArray)
+			return nil
+		}
+
+		if field.Type().Elem().Kind() == reflect.Bool {
+			bitlist := Str_to_boolArray(value.(string))
+			field.Set(reflect.ValueOf(bitlist))
+			return nil
+		}
+
 		// For other slice types, marshal and unmarshal
 		rawJSON, err := json.Marshal(value)
 		if err != nil {
@@ -287,22 +392,113 @@ func setFieldValue(field reflect.Value, value interface{}) error {
 	case reflect.String:
 		field.SetString(value.(string))
 	case reflect.Uint64:
-		val, err := Str_to_uint64(value.(string))
-		if err != nil {
-			return err
+		// Handle both string and numeric input
+		switch v := value.(type) {
+		case string:
+			val, err := Str_to_uint64(v)
+			if err != nil {
+				return errors.New("error decoding uint64 from string")
+			}
+			field.SetUint(val)
+		case float64: // JSON unmarshalling often converts numbers to float64
+			field.SetUint(uint64(v))
+		default:
+			return fmt.Errorf("expected string or float64 for uint64, got %T", v)
 		}
-		field.SetUint(val)
-	default:
-		return fmt.Errorf("unsupported field type: %s", field.Type())
+	case reflect.Array:
+		elemKind := field.Type().Elem().Kind()
+
+		// Handle 2D arrays (e.g., [[32]byte])
+		if elemKind == reflect.Array {
+			sliceValue := reflect.ValueOf(value)
+			if sliceValue.Kind() != reflect.Slice {
+				return fmt.Errorf("expected slice for 2D array input, got %T", value)
+			}
+
+			if sliceValue.Len() != field.Len() {
+				return fmt.Errorf("input slice length %d does not match the required length %d", sliceValue.Len(), field.Len())
+			}
+
+			for i := 0; i < field.Len(); i++ {
+				innerValue := sliceValue.Index(i).Interface()
+				err := setFieldValue(field.Index(i), innerValue)
+				if err != nil {
+					return fmt.Errorf("error setting value for element %d: %w", i, err)
+				}
+			}
+			return nil
+		}
+
+		// Handling 1D arrays (e.g., [32]byte)
+		if field.Type().Len() == 32 {
+			val, err := Hex_str_to_Bytes32(value.(string))
+			if err != nil {
+				return err
+			}
+			field.Set(reflect.ValueOf(val))
+		} else if field.Type().Len() == 48 {
+			val, err := Hex_str_to_bytes(value.(string))
+			if err != nil {
+				return err
+			}
+			if len(val) != 48 {
+				return errors.New("input byte slice length does not match the required length of 48")
+			}
+			var fixedArray [48]byte
+			copy(fixedArray[:], val)
+			field.Set(reflect.ValueOf(fixedArray))
+		} else if field.Type().Len() == 96 {
+			val, err := Hex_str_to_bytes(value.(string))
+			if err != nil {
+				return err
+			}
+			if len(val) != 96 {
+				return errors.New("input byte slice length does not match the required length of 96")
+			}
+			var fixedArray SignatureBytes
+			copy(fixedArray[:], val)
+			field.Set(reflect.ValueOf(fixedArray))
+		} else if field.Type().Len() == 256 {
+			val, err := Hex_str_to_bytes(value.(string))
+			if err != nil {
+				return err
+			}
+			if len(val) != 256 {
+				return errors.New("input byte slice length does not match the required length of 256")
+			}
+			var fixedArray LogsBloom
+			copy(fixedArray[:], val)
+			field.Set(reflect.ValueOf(fixedArray))
+		} else if field.Type().Len() == 1073741824 {
+			val, err := Hex_str_to_bytes(value.(string))
+			if err != nil {
+				return err
+			}
+			if len(val) != 1073741824 {
+				return errors.New("input byte slice length does not match the required length of 1073741824")
+			}
+			var fixedArray Transaction
+			copy(fixedArray[:], val)
+			field.Set(reflect.ValueOf(fixedArray))
+		} else if field.Type().Len() == 20 {
+			val, err := Hex_str_to_bytes(value.(string))
+			if err != nil {
+				return errors.New("error decoding address")
+			}
+			var fixedArray Address
+			copy(fixedArray[:], val)
+			field.Set(reflect.ValueOf(fixedArray))
+		} else {
+			return errors.New("unsupported array length")
+
+		}
 	}
 	return nil
 }
 
-
-
-
 // if we need to export the functions , just make their first letter capitalised
 func Hex_str_to_bytes(s string) ([]byte, error) {
+	s = stripQuotes(s)
 	s = strings.TrimPrefix(s, "0x")
 
 	bytesArray, err := hex.DecodeString(s)
@@ -369,4 +565,23 @@ func (b *Bytes32) UnmarshalJSON(data []byte) error {
 	copy(b[:], hexDecode(hexString)[:])
 
 	return nil
+}
+
+func Str_to_boolArray(s string) Bitlist {
+
+	data, _ := Hex_str_to_bytes(s)
+	var bitlist Bitlist
+	for _, b := range data {
+		if b == 0x01 {
+			bitlist = append(bitlist, true)
+		}
+	}
+	return bitlist
+}
+
+func stripQuotes(s string) string {
+	if len(s) > 1 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
