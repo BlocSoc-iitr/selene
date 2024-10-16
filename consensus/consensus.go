@@ -301,7 +301,7 @@ func (in *Inner) get_execution_payload(slot *uint64) (*consensus_core.ExecutionP
 	}
 
 	block := <-blockChan
-	Gethblock, err := beacon.BlockFromJSON("capella", block.Body.Hash)
+	Gethblock, err := beacon.BlockFromJSON("capella", block.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,6 @@ func (in *Inner) get_execution_payload(slot *uint64) (*consensus_core.ExecutionP
 	finalizedSlot := in.Store.FinalizedHeader.Slot
 
 	var verifiedBlockHash geth.Hash
-
 	if *slot == latestSlot {
 		verifiedBlockHash = toGethHeader(&in.Store.OptimisticHeader).Hash()
 	} else if *slot == finalizedSlot {
@@ -376,13 +375,15 @@ func (in *Inner) Get_payloads(startSlot, endSlot uint64) ([]interface{}, error) 
 		select {
 		case payload, ok := <-payloadsChan:
 			if !ok {
-				return payloads, nil
+				return nil, errors.New("payloads channel closed unexpectedly")
 			}
 			payloads = append(payloads, payload)
+			return payloads, nil
 		case err := <-errorChan:
 			return nil, err
 		}
 	}
+
 }
 func (in *Inner) advance() error {
 	ErrorChan := make(chan error, 1)
@@ -931,10 +932,8 @@ func verifySyncCommitteeSignature(
 		return false
 	}
 
-	
-
 	return utils.FastAggregateVerify(collectedPks, signingRoot[:], &sig)
-	
+
 }
 
 func ComputeCommitteeSignRoot(header *beacon.Header, fork consensus_core.Bytes32) consensus_core.Bytes32 {
@@ -1028,7 +1027,7 @@ func PayloadToBlock(value *consensus_core.ExecutionPayload) (*common.Block, erro
 	}, nil
 }
 
-func processTransaction(txBytes *[1073741824]byte, blockHash consensus_core.Bytes32, blockNumber *uint64, index uint64) (common.Transaction, error) {
+func processTransaction(txBytes *[]byte, blockHash consensus_core.Bytes32, blockNumber *uint64, index uint64) (common.Transaction, error) {
 	// Decode the transaction envelope (RLP-encoded)
 
 	txEnvelope, err := DecodeTxEnvelope(txBytes)
@@ -1079,8 +1078,10 @@ func processTransaction(txBytes *[1073741824]byte, blockHash consensus_core.Byte
 		tx.MaxPriorityFeePerGas = new(big.Int).Set(txEnvelope.GasTipCap())
 		tx.MaxFeePerBlobGas = new(big.Int).Set(txEnvelope.BlobGasFeeCap())
 		tx.BlobVersionedHashes = txEnvelope.BlobHashes()
+	case types.LegacyTxType:
+		// No additional fields to set
 	default:
-		fmt.Println("Unhandled transaction type")
+		fmt.Print("Unhandled transaction type")
 	}
 
 	return tx, nil
@@ -1106,18 +1107,11 @@ func popCount(b byte) int {
 }
 
 // DecodeTxEnvelope takes the transaction bytes and decodes them into a transaction envelope (Ethereum transaction)
-func DecodeTxEnvelope(txBytes *[1073741824]byte) (*types.Transaction, error) {
+func DecodeTxEnvelope(txBytes *[]byte) (*types.Transaction, error) {
 	// Create an empty transaction object
 	var tx types.Transaction
 
-	var txBytesForUnmarshal []byte
-	for _, b := range txBytes {
-		if b == 0 {
-			break
-		}
-		txBytesForUnmarshal = append(txBytesForUnmarshal, b)
-	}
-
+	var txBytesForUnmarshal []byte = *txBytes
 	// Unmarshal the RLP-encoded transaction bytes into the transaction object
 	err := tx.UnmarshalBinary(txBytesForUnmarshal)
 	if err != nil {
@@ -1174,6 +1168,6 @@ func toGethSyncCommittee(committee *consensus_core.SyncCommittee) *beacon.Serial
 	for i, key := range jsoncommittee.Pubkeys {
 		copy(s[i*48:], key[:])
 	}
-copy(s[512*48:], jsoncommittee.Aggregate[:])
+	copy(s[512*48:], jsoncommittee.Aggregate[:])
 	return &s
 }
