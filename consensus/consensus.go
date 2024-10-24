@@ -60,10 +60,11 @@ type GenericUpdate struct {
 	FinalizedHeader         consensus_core.Header
 	FinalityBranch          []consensus_core.Bytes32
 }
-
+// The consensus client fields are updated because state takes chan *common.Block,
+// not common.Block
 type ConsensusClient struct {
-	BlockRecv          *common.Block
-	FinalizedBlockRecv *common.Block
+	BlockRecv          chan *common.Block
+	FinalizedBlockRecv chan *common.Block
 	CheckpointRecv     *[]byte
 	genesisTime        uint64
 	db                 Database
@@ -73,7 +74,7 @@ type Inner struct {
 	RPC                rpc.ConsensusRpc
 	Store              LightClientStore
 	lastCheckpoint     *[]byte
-	blockSend          chan common.Block
+	blockSend          chan *common.Block
 	finalizedBlockSend chan *common.Block
 	checkpointSend     chan *[]byte
 	Config             *config.Config
@@ -88,22 +89,33 @@ type LightClientStore struct {
 }
 
 func (con ConsensusClient) New(rpc *string, config config.Config) ConsensusClient {
-	blockSend := make(chan common.Block, 256)
+	blockSend := make(chan *common.Block, 256)
 	finalizedBlockSend := make(chan *common.Block)
 	checkpointSend := make(chan *[]byte)
-
-	db, err := con.db.New(&config)
+	// Here the initialisation of database was wrong as it was pointing to an interface,
+	// not a types that implements the interface. This resulted in an invalid address error
+	_db, err := (&ConfigDB{}).New(&config)
 	if err != nil {
 		panic(err)
 	}
-
+	// Doing this makes the db variable a concrete type (ConfigDB here)
+	// It can also be switched to FileDB if needed
+	db, ok := _db.(*ConfigDB)
+	if !ok {
+		panic(errors.New("Expected ConfigDB instance"))
+	}
 	var initialCheckpoint [32]byte
 
+	// There was a problem in this assignment initially as it was setting the checkpoint
+	// to db.LoadCheckpoint() when the user inputed a checkpoint. This updated one is 
+	// according to Helios.
 	if config.Checkpoint != nil {
+		initialCheckpoint = *config.Checkpoint
+	} else {
 		initialNewCheckpoint, errorWhileLoadingCheckpoint := db.LoadCheckpoint()
 		copy(initialCheckpoint[:], initialNewCheckpoint)
 		if errorWhileLoadingCheckpoint != nil {
-			log.Printf("error while loading checkpoint: %v", errorWhileLoadingCheckpoint)
+			initialCheckpoint = config.DefaultCheckpoint
 		}
 	}
 	if initialCheckpoint == [32]byte{} {
@@ -152,13 +164,11 @@ func (con ConsensusClient) New(rpc *string, config config.Config) ConsensusClien
 		}
 	}()
 
-	blocksReceived := <-blockSend
-	finalizedBlocksReceived := <-finalizedBlockSend
 	checkpointsReceived := <-checkpointSend
 
 	return ConsensusClient{
-		BlockRecv:          &blocksReceived,
-		FinalizedBlockRecv: finalizedBlocksReceived,
+		BlockRecv:          blockSend,
+		FinalizedBlockRecv: finalizedBlockSend,
 		CheckpointRecv:     checkpointsReceived,
 		genesisTime:        config.Chain.GenesisTime,
 		db:                 db,
@@ -251,7 +261,7 @@ func sync_all_fallback(inner *Inner, chainID uint64) error {
 	return <-errorChan
 }
 
-func (in *Inner) New(rpcURL string, blockSend chan common.Block, finalizedBlockSend chan *common.Block, checkpointSend chan *[]byte, config *config.Config) *Inner {
+func (in *Inner) New(rpcURL string, blockSend chan *common.Block, finalizedBlockSend chan *common.Block, checkpointSend chan *[]byte, config *config.Config) *Inner {
 	rpcClient := rpc.NewConsensusRpc(rpcURL)
 
 	return &Inner{
@@ -524,7 +534,7 @@ func (in *Inner) send_blocks() error {
 			log.Printf("Error converting payload to block: %v", err)
 			return
 		}
-		in.blockSend <- *block
+		in.blockSend <- block
 	}()
 
 	go func() {
