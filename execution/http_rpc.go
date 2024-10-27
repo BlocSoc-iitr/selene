@@ -4,9 +4,9 @@ import (
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc" 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
 	"strconv"
 )
@@ -372,6 +372,3 @@ func toFilterArg(q ethereum.FilterQuery) map[string]interface{} {
 	}
 	return arg
 }
-
-
-

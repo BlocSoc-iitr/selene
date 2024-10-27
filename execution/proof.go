@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-
 func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, error) {
 	expectedHash := root
 	pathOffset := 0
