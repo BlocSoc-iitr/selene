@@ -3,7 +3,6 @@ package execution
 import (
 	"encoding/json"
 	"fmt"
-	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -25,14 +24,15 @@ type StorageProof struct {
 	Proof []hexutil.Bytes
 	Value *uint256.Int
 }
+// Updated as earlier, the proof from rpc was not able to unmarshal into the struct
 type EIP1186ProofResponse struct {
-	Address      seleneCommon.Address
-	Balance      *uint256.Int
-	CodeHash     common.Hash
-	Nonce        uint64
-	StorageHash  common.Hash
-	AccountProof []hexutil.Bytes
-	StorageProof []StorageProof
+	Address      common.Address  `json:"address"`
+	Balance      *uint256.Int    `json:"balance"`
+	CodeHash     common.Hash     `json:"codeHash"`
+	Nonce        hexutil.Uint64  `json:"nonce"`
+	StorageHash  common.Hash     `json:"storageHash"`
+	AccountProof []hexutil.Bytes `json:"accountProof"`
+	StorageProof []StorageProof  `json:"storageProof"`
 }
 type Account struct {
 	Balance     *big.Int
