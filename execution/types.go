@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"reflect"
 )
+type B256 = common.Hash
 
 type FeeHistory struct {
 	BaseFeePerGas []hexutil.Big
@@ -50,7 +51,11 @@ type CallOpts struct {
 	Value    *big.Int        `json:"value,omitempty"`
 	Data     []byte          `json:"data,omitempty"`
 }
-
+type AccessListItem struct {
+	Address     common.Address //I used Common here instead of common
+	StorageKeys []B256
+}
+type AccessList []AccessListItem
 func (c *CallOpts) String() string {
 	return fmt.Sprintf("CallOpts{From: %v, To: %v, Gas: %v, GasPrice: %v, Value: %v, Data: 0x%x}",
 		c.From, c.To, c.Gas, c.GasPrice, c.Value, c.Data)
