@@ -1,6 +1,10 @@
 package execution
 
 import (
+	"strconv"
+	"encoding/hex"
+	"math/big"
+
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -8,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
-	"strconv"
 )
 
 type HttpRpc struct {
@@ -16,27 +19,43 @@ type HttpRpc struct {
 	provider *rpc.Client
 }
 
-func New(rpcUrl string) (*HttpRpc, error) {
-	client, err := rpc.Dial(rpcUrl)
+// I have made some changes to ExecutionRpc and to HttpRpc as HttpRpc was not satisfying
+// ExecutionRpc interface before
+func (h *HttpRpc) New(rpcUrl *string) (ExecutionRpc, error) {
+	client, err := rpc.Dial(*rpcUrl)
 	if err != nil {
 		return nil, err
 	}
 
 	return &HttpRpc{
-		url:      rpcUrl,
+		url:      *rpcUrl,
 		provider: client,
 	}, nil
 }
 
-func (h *HttpRpc) GetProof(address *common.Address, slots *[]common.Hash, block uint64) (EIP1186ProofResponse, error) {
+// All the changes that have been made in functions that fetch from rpc are because:
+// The rpc expects request to be in form of hexadecimal strings. For example, if we want
+// to send block number equal to 1405, it will interpret it as 0x1405, which is not it's hex representation
+//
+// Similarly, the values recieved from rpc should also be treated as hex strings
+func (h *HttpRpc) GetProof(address *seleneCommon.Address, slots *[]common.Hash, block uint64) (EIP1186ProofResponse, error) {
 	resultChan := make(chan struct {
 		proof EIP1186ProofResponse
 		err   error
 	})
-
+	// All arguments to rpc are expected to be in form of hex strings
+	var slotHex []string
+	if slots != nil {
+		for _, slot := range *slots {
+			slotHex = append(slotHex, slot.Hex())
+		}
+	}
+	if len(*slots) == 0 {
+		slotHex = []string{}
+	}
 	go func() {
 		var proof EIP1186ProofResponse
-		err := h.provider.Call(&proof, "eth_getProof", address, slots, toBlockNumArg(block))
+		err := h.provider.Call(&proof, "eth_getProof", "0x"+hex.EncodeToString(address.Addr[:]), slotHex, toBlockNumArg(block))
 		resultChan <- struct {
 			proof EIP1186ProofResponse
 			err   error
@@ -50,6 +69,8 @@ func (h *HttpRpc) GetProof(address *common.Address, slots *[]common.Hash, block 
 	return result.proof, nil
 }
 
+// TODO: CreateAccessList is throwing an error
+// There is a problem in unmarshaling the response into types.AccessList
 func (h *HttpRpc) CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (types.AccessList, error) {
 	resultChan := make(chan struct {
 		accessList types.AccessList
@@ -58,7 +79,7 @@ func (h *HttpRpc) CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (
 
 	go func() {
 		var accessList types.AccessList
-		err := h.provider.Call(&accessList, "eth_createAccessList", opts, block)
+		err := h.provider.Call(&accessList, "eth_createAccessList", opts, block.String())
 		resultChan <- struct {
 			accessList types.AccessList
 			err        error
@@ -73,7 +94,7 @@ func (h *HttpRpc) CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (
 	return result.accessList, nil
 }
 
-func (h *HttpRpc) GetCode(address *common.Address, block uint64) (hexutil.Bytes, error) {
+func (h *HttpRpc) GetCode(address *seleneCommon.Address, block uint64) ([]byte, error) {
 	resultChan := make(chan struct {
 		code hexutil.Bytes
 		err  error
@@ -81,7 +102,7 @@ func (h *HttpRpc) GetCode(address *common.Address, block uint64) (hexutil.Bytes,
 
 	go func() {
 		var code hexutil.Bytes
-		err := h.provider.Call(&code, "eth_getCode", address, toBlockNumArg(block))
+		err := h.provider.Call(&code, "eth_getCode", "0x"+hex.EncodeToString(address.Addr[:]), toBlockNumArg(block))
 		resultChan <- struct {
 			code hexutil.Bytes
 			err  error
@@ -196,7 +217,7 @@ func (h *HttpRpc) GetFilterChanges(filterID *uint256.Int) ([]types.Log, error) {
 
 	go func() {
 		var logs []types.Log
-		err := h.provider.Call(&logs, "eth_getFilterChanges", filterID)
+		err := h.provider.Call(&logs, "eth_getFilterChanges", filterID.Hex())
 		resultChan <- struct {
 			logs []types.Log
 			err  error
@@ -219,7 +240,7 @@ func (h *HttpRpc) UninstallFilter(filterID *uint256.Int) (bool, error) {
 
 	go func() {
 		var result bool
-		err := h.provider.Call(&result, "eth_uninstallFilter", filterID)
+		err := h.provider.Call(&result, "eth_uninstallFilter", filterID.Hex())
 		resultChan <- struct {
 			result bool
 			err    error
@@ -241,12 +262,13 @@ func (h *HttpRpc) GetNewFilter(filter *ethereum.FilterQuery) (uint256.Int, error
 	})
 
 	go func() {
-		var filterID uint256.Int
+		var filterID hexutil.Big
 		err := h.provider.Call(&filterID, "eth_newFilter", toFilterArg(*filter))
+		filterResult := big.Int(filterID)
 		resultChan <- struct {
 			filterID uint256.Int
 			err      error
-		}{filterID, err}
+		}{*uint256.MustFromBig(&filterResult), err}
 		close(resultChan)
 	}()
 
@@ -264,12 +286,13 @@ func (h *HttpRpc) GetNewBlockFilter() (uint256.Int, error) {
 	})
 
 	go func() {
-		var filterID uint256.Int
+		var filterID hexutil.Big
 		err := h.provider.Call(&filterID, "eth_newBlockFilter")
+		filterResult := big.Int(filterID)
 		resultChan <- struct {
 			filterID uint256.Int
 			err      error
-		}{filterID, err}
+		}{*uint256.MustFromBig(&filterResult), err}
 		close(resultChan)
 	}()
 
@@ -287,12 +310,13 @@ func (h *HttpRpc) GetNewPendingTransactionFilter() (uint256.Int, error) {
 	})
 
 	go func() {
-		var filterID uint256.Int
+		var filterID hexutil.Big
 		err := h.provider.Call(&filterID, "eth_newPendingTransactionFilter")
+		filterResult := big.Int(filterID)
 		resultChan <- struct {
 			filterID uint256.Int
 			err      error
-		}{filterID, err}
+		}{*uint256.MustFromBig(&filterResult), err}
 		close(resultChan)
 	}()
 
@@ -310,12 +334,12 @@ func (h *HttpRpc) ChainId() (uint64, error) {
 	})
 
 	go func() {
-		var chainID uint64
+		var chainID hexutil.Uint64
 		err := h.provider.Call(&chainID, "eth_chainId")
 		resultChan <- struct {
 			chainID uint64
 			err     error
-		}{chainID, err}
+		}{uint64(chainID), err}
 		close(resultChan)
 	}()
 
@@ -326,17 +350,17 @@ func (h *HttpRpc) ChainId() (uint64, error) {
 	return result.chainID, nil
 }
 
-func (h *HttpRpc) GetFeeHistory(blockCount uint64, lastBlock uint64, rewardPercentiles *[]float64) (ethereum.FeeHistory, error) {
+func (h *HttpRpc) GetFeeHistory(blockCount uint64, lastBlock uint64, rewardPercentiles *[]float64) (FeeHistory, error) {
 	resultChan := make(chan struct {
-		feeHistory ethereum.FeeHistory
+		feeHistory FeeHistory
 		err        error
 	})
 
 	go func() {
-		var feeHistory ethereum.FeeHistory
-		err := h.provider.Call(&feeHistory, "eth_feeHistory", blockCount, lastBlock, rewardPercentiles)
+		var feeHistory FeeHistory
+		err := h.provider.Call(&feeHistory, "eth_feeHistory", hexutil.Uint64(blockCount).String(), toBlockNumArg(lastBlock), rewardPercentiles)
 		resultChan <- struct {
-			feeHistory ethereum.FeeHistory
+			feeHistory FeeHistory
 			err        error
 		}{feeHistory, err}
 		close(resultChan)
@@ -344,7 +368,7 @@ func (h *HttpRpc) GetFeeHistory(blockCount uint64, lastBlock uint64, rewardPerce
 
 	result := <-resultChan
 	if result.err != nil {
-		return ethereum.FeeHistory{}, result.err
+		return FeeHistory{}, result.err
 	}
 	return result.feeHistory, nil
 }
@@ -365,10 +389,10 @@ func toFilterArg(q ethereum.FilterQuery) map[string]interface{} {
 		arg["topics"] = q.Topics
 	}
 	if q.FromBlock != nil {
-		arg["fromBlock"] = q.FromBlock.String()
+		arg["fromBlock"] = toBlockNumArg(q.FromBlock.Uint64())
 	}
 	if q.ToBlock != nil {
-		arg["toBlock"] = q.ToBlock.String()
+		arg["toBlock"] = toBlockNumArg(q.ToBlock.Uint64())
 	}
 	return arg
 }

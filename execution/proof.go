@@ -156,10 +156,10 @@ func keccak256(data []byte) []byte {
 	hash.Write(data)
 	return hash.Sum(nil)
 }
-
+// Updated as EIP1186ProofResponse was updated
 func EncodeAccount(proof *EIP1186ProofResponse) ([]byte, error) {
 	account := Account{
-		Nonce:       proof.Nonce,
+		Nonce:       uint64(proof.Nonce),
 		Balance:     proof.Balance.ToBig(),
 		StorageHash: proof.StorageHash,
 		CodeHash:    proof.CodeHash,
