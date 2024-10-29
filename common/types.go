@@ -3,10 +3,10 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 )
@@ -45,27 +45,28 @@ type Transactions struct {
 	Hashes [][32]byte
 	Full   []Transaction // transaction needs to be defined
 }
-
+// Updated as earlier, txn data fetched from rpc was not able to unmarshal
+// into the struct
 type Transaction struct {
-	AccessList           types.AccessList
-	Hash                 common.Hash
-	Nonce                uint64
-	BlockHash            [32]byte
-	BlockNumber          *uint64
-	TransactionIndex     uint64
-	From                 string
-	To                   *common.Address
-	Value                *big.Int
-	GasPrice             *big.Int
-	Gas                  uint64
-	Input                []byte
-	ChainID              *big.Int
-	TransactionType      uint8
-	Signature            *Signature
-	MaxFeePerGas         *big.Int
-	MaxPriorityFeePerGas *big.Int
-	MaxFeePerBlobGas     *big.Int
-	BlobVersionedHashes  []common.Hash
+	AccessList           types.AccessList `json:"accessList"`
+	Hash                 common.Hash      `json:"hash"`
+	Nonce                hexutil.Uint64   `json:"nonce"`
+	BlockHash            string           `json:"blockHash"`   // Pointer because it's nullable
+	BlockNumber          hexutil.Uint64   `json:"blockNumber"` // Pointer because it's nullable
+	TransactionIndex     hexutil.Uint64   `json:"transactionIndex"`
+	From                 string           `json:"from"`
+	To                   *common.Address  `json:"to"` // Pointer because 'to' can be null for contract creation
+	Value                hexutil.Big      `json:"value"`
+	GasPrice             hexutil.Big      `json:"gasPrice"`
+	Gas                  hexutil.Uint64   `json:"gas"`
+	Input                hexutil.Bytes    `json:"input"`
+	ChainID              hexutil.Big      `json:"chainId"`
+	TransactionType      hexutil.Uint     `json:"type"`
+	Signature            *Signature       `json:"signature"`
+	MaxFeePerGas         hexutil.Big      `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas hexutil.Big      `json:"maxPriorityFeePerGas"`
+	MaxFeePerBlobGas     hexutil.Big      `json:"maxFeePerBlobGas"`
+	BlobVersionedHashes  []common.Hash    `json:"blobVersionedHashes"`
 }
 
 type Signature struct {
