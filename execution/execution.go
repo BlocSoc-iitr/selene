@@ -26,12 +26,15 @@ type ExecutionClient struct {
 }
 
 func (e *ExecutionClient) New(rpc string, state *State) (*ExecutionClient, error) {
-	r, err := ExecutionRpc.New(nil, &rpc)
+	// This is updated as earlier, when ExecutionRpc.New() was called, it was giving an 
+	// invalid address or nil pointer dereference error as there wasn't a concrete type that implemented ExecutionRpc
+	var r ExecutionRpc
+	r, err := (&HttpRpc{}).New(&rpc)
 	if err != nil {
 		return nil, err
 	}
 	return &ExecutionClient{
-		Rpc:   *r,
+		Rpc:   r,
 		state: state,
 	}, nil
 }
@@ -60,12 +63,18 @@ func (e *ExecutionClient) CheckRpc(chainID uint64) error {
 }
 
 // GetAccount retrieves the account information
-func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots []common.Hash, tag seleneCommon.BlockTag) (Account, error) { //Account from execution/types.go
+func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots *[]common.Hash, tag seleneCommon.BlockTag) (Account, error) { //Account from execution/types.go
 	block := e.state.GetBlock(tag)
-	proof, _ := e.Rpc.GetProof(address, &slots, block.Number)
-
+	// Error Handling
+	proof, err := e.Rpc.GetProof(address, slots, block.Number)
+	if err != nil {
+		return Account{}, err
+	}
 	accountPath := crypto.Keccak256(address.Addr[:])
-	accountEncoded, _ := EncodeAccount(&proof)
+	accountEncoded, err := EncodeAccount(&proof)
+	if err != nil {
+		return Account{}, err
+	}
 	accountProofBytes := make([][]byte, len(proof.AccountProof))
 	for i, hexByte := range proof.AccountProof {
 		accountProofBytes[i] = hexByte
@@ -78,7 +87,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots []comm
 		return Account{}, NewInvalidAccountProofError(address.Addr)
 	}
 	// modify
-	slotMap := make(map[common.Hash]*big.Int)
+	slotMap := []Slot{}
 	for _, storageProof := range proof.StorageProof {
 		key, err := utils.Hex_str_to_bytes(storageProof.Key.Hex())
 		if err != nil {
@@ -105,7 +114,10 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots []comm
 		if !isValid {
 			return Account{}, fmt.Errorf("invalid storage proof for address: %v, key: %v", *address, storageProof.Key)
 		}
-		slotMap[storageProof.Key] = storageProof.Value.ToBig()
+		slotMap = append(slotMap, Slot{
+			Key:   storageProof.Key,
+			Value: storageProof.Value.ToBig(),
+		})
 	}
 	var code []byte
 	if bytes.Equal(proof.CodeHash.Bytes(), crypto.Keccak256([]byte(KECCAK_EMPTY))) {
@@ -123,7 +135,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots []comm
 	}
 	account := Account{
 		Balance:     proof.Balance.ToBig(),
-		Nonce:       proof.Nonce,
+		Nonce:       uint64(proof.Nonce),
 		Code:        code,
 		CodeHash:    proof.CodeHash,
 		StorageHash: proof.StorageHash,
@@ -298,10 +310,8 @@ func (e *ExecutionClient) GetLogs(filter ethereum.FilterQuery) ([]types.Log, err
 	select {
 	case logs := <-logsChan:
 		if len(logs) > MAX_SUPPORTED_LOGS_NUMBER {
-			return nil, &ExecutionError{
-				Kind:    "TooManyLogs",
-				Details: fmt.Sprintf("Too many logs to prove: %d, max: %d", len(logs), MAX_SUPPORTED_LOGS_NUMBER),
-			}
+			// The earlier error was not returning properly
+			return nil, errors.New("logs exceed max supported logs number")
 		}
 		logPtrs := make([]*types.Log, len(logs))
 		for i := range logs {
@@ -506,19 +516,24 @@ func rlpHash(obj interface{}) (common.Hash, error) {
 	}
 	return crypto.Keccak256Hash(encoded), nil
 }
+// This function is updated as it was going in an infinite loop
 func calculateMerkleRoot(hashes []common.Hash) common.Hash {
-	if len(hashes) == 1 {
+	switch len(hashes) {
+	case 0:
+		return common.Hash{} // Return empty hash for empty slice
+	case 1:
 		return hashes[0]
+	default:
+		if len(hashes)%2 != 0 {
+			hashes = append(hashes, hashes[len(hashes)-1])
+		}
+		var newLevel []common.Hash
+		for i := 0; i < len(hashes); i += 2 {
+			combinedHash := crypto.Keccak256(append(hashes[i].Bytes(), hashes[i+1].Bytes()...))
+			newLevel = append(newLevel, common.BytesToHash(combinedHash))
+		}
+		return calculateMerkleRoot(newLevel)
 	}
-	if len(hashes)%2 != 0 {
-		hashes = append(hashes, hashes[len(hashes)-1])
-	}
-	var newLevel []common.Hash
-	for i := 0; i < len(hashes); i += 2 {
-		combinedHash := crypto.Keccak256(append(hashes[i].Bytes(), hashes[i+1].Bytes()...))
-		newLevel = append(newLevel, common.BytesToHash(combinedHash))
-	}
-	return calculateMerkleRoot(newLevel)
 }
 
 // contains checks if a receipt is in the list of receipts
