@@ -10,6 +10,9 @@ Selene is a fast, open source, portable & secure light client for Ethereum writt
 The image attached below is a simple demonstration of what Selene is and how it works at a high level: 
 
 ![High Level Overview](https://github.com/user-attachments/assets/948541ef-5407-4035-a49d-e0d23711aadc)
+## Architecture
+Below is the complete architecture of how a light client like Selene works under the hood:
+
 ![Selene Architecture](https://github.com/user-attachments/assets/db7eb9d7-5bc3-4911-a849-1b2d05239942)
 ## Data Flow
 
