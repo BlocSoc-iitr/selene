@@ -18,13 +18,12 @@ type FeeHistory struct {
 	Reward        [][]hexutil.Big
 }
 
-// defined storage proof	and EIP1186ProofResponse structs
+// This is to help in unmarshaling values from rpc response
 type StorageProof struct {
-	Key   common.Hash
-	Proof []hexutil.Bytes
-	Value *uint256.Int
+	Key   common.Hash     `json:"key"`
+	Proof []hexutil.Bytes `json:"proof"`
+	Value *uint256.Int    `json:"value"`
 }
-// Updated as earlier, the proof from rpc was not able to unmarshal into the struct
 type EIP1186ProofResponse struct {
 	Address      common.Address  `json:"address"`
 	Balance      *uint256.Int    `json:"balance"`
@@ -40,7 +39,12 @@ type Account struct {
 	CodeHash    common.Hash
 	Code        []byte
 	StorageHash common.Hash
-	Slots       map[common.Hash]*big.Int
+	Slots       []Slot
+}
+// This is to help in unmarshaling values from rpc response
+type Slot struct {
+	Key   common.Hash // The key (slot)
+	Value *big.Int    // The value (storage value)
 }
 type CallOpts struct {
 	From     *common.Address `json:"from,omitempty"`
