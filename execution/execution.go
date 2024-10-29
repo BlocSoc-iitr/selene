@@ -31,7 +31,7 @@ func (e *ExecutionClient) New(rpc string, state *State) (*ExecutionClient, error
 		return nil, err
 	}
 	return &ExecutionClient{
-		Rpc:   *r,
+		Rpc:   r,
 		state: state,
 	}, nil
 }
@@ -123,7 +123,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots []comm
 	}
 	account := Account{
 		Balance:     proof.Balance.ToBig(),
-		Nonce:       proof.Nonce,
+		Nonce:       uint64(proof.Nonce),
 		Code:        code,
 		CodeHash:    proof.CodeHash,
 		StorageHash: proof.StorageHash,
