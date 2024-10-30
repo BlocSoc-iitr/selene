@@ -6,15 +6,16 @@ import (
 	"math/big"
 	"sync"
 	"testing"
+	"time"
 
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
-	"github.com/holiman/uint256"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,7 +75,11 @@ func CreateNewState() *State {
 		},
 	}
 
+	var mu sync.Mutex
+	wg := sync.WaitGroup{}
+
 	// Push blocks through channel
+	wg.Add(1)
 	go func() {
 		blockChan <- block1
 		blockChan <- block2
@@ -83,12 +88,19 @@ func CreateNewState() *State {
 	}()
 
 	// Allow goroutine to process the blocks
-	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for len(state.blocks) < 3 {
-			// wait for blocks to be processed
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		
+		for range ticker.C {
+			mu.Lock()
+			if len(state.blocks) >= 3 {
+				mu.Unlock()
+				return
+			}
+			mu.Unlock()
 		}
 	}()
 
@@ -120,8 +132,24 @@ func CreateNewState() *State {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for state.finalizedBlock == nil {
-			// wait for finalized block to be processed
+		finalizedBlockChan <- finalizedBlock
+		close(finalizedBlockChan)
+	}()
+
+	// Wait for finalized block
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		
+		for range ticker.C {
+			mu.Lock()
+			if state.finalizedBlock != nil {
+				mu.Unlock()
+				return
+			}
+			mu.Unlock()
 		}
 	}()
 	wg.Wait()
