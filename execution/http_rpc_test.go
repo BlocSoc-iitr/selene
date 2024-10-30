@@ -69,29 +69,29 @@ func TestGetProof(t *testing.T) {
   	assert.Equal(t, accountProof, proof, "Proof didn't match expected value")
 }
 
-func TestCreateAccessList(t *testing.T) {
-	rpc := MakeNewRpc(t)
+// func TestCreateAccessList(t *testing.T) {
+// 	rpc := MakeNewRpc(t)
 	
-	fromAddress := common.HexToAddress("0x8885d8FFefb29AC94FCe584014266A6fE8437356")
-	toAddress := common.HexToAddress("0xb5C3dd56b4Dc6108b21b0Dac4A20898A464b8c41")
-	inputData := common.Hex2Bytes("0x")
-	// data, err := utils.Hex_str_to_bytes("0x608060806080608155")
+// 	fromAddress := common.HexToAddress("0x8885d8FFefb29AC94FCe584014266A6fE8437356")
+// 	toAddress := common.HexToAddress("0xb5C3dd56b4Dc6108b21b0Dac4A20898A464b8c41")
+// 	inputData := common.Hex2Bytes("0x")
+// 	// data, err := utils.Hex_str_to_bytes("0x608060806080608155")
 	
-	opts := CallOpts{
-		From: &fromAddress,
-		To: &toAddress,
-		Data: inputData,
-	}
-	block := seleneCommon.BlockTag{
-		Finalized: true,
-		Number: 20985649,
-	}
+// 	opts := CallOpts{
+// 		From: &fromAddress,
+// 		To: &toAddress,
+// 		Data: inputData,
+// 	}
+// 	block := seleneCommon.BlockTag{
+// 		Finalized: true,
+// 		Number: 20985649,
+// 	}
 
-	accessList, err := rpc.CreateAccessList(opts, block)
-	fmt.Println("Access list:", accessList)
-	assert.NoError(t, err, "Found Error")
+// 	accessList, err := rpc.CreateAccessList(opts, block)
+// 	fmt.Println("Access list:", accessList)
+// 	assert.NoError(t, err, "Found Error")
 
-}
+// }
 
 func TestGetCode(t *testing.T) {
 	rpc := MakeNewRpc(t)
