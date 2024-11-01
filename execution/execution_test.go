@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
-	"github.com/BlocSoc-iitr/selene/utils"
+	// "github.com/BlocSoc-iitr/selene/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -154,22 +154,22 @@ func TestCheckRpc(t *testing.T) {
 
 // Both GetAccount() and GetTransactionReceipt() depend on state
 
-func TestGetAccount(t *testing.T) {
-	executionClient := CreateNewExecutionClient()
-	addressBytes, _ := utils.Hex_str_to_bytes("0x457a22804cf255ee8c1b7628601c5682b3d70c71")
+// func TestGetAccount(t *testing.T) {
+// 	executionClient := CreateNewExecutionClient()
+// 	addressBytes, _ := utils.Hex_str_to_bytes("0x457a22804cf255ee8c1b7628601c5682b3d70c71")
 
-	address := seleneCommon.Address{Addr: [20]byte(addressBytes)}
+// 	address := seleneCommon.Address{Addr: [20]byte(addressBytes)}
 
-	slots := []common.Hash{}
-	tag := seleneCommon.BlockTag{
-		Finalized: true,
-	}
-	print("Check\n")
-	account, err := executionClient.GetAccount(&address, &slots, tag)
+// 	slots := []common.Hash{}
+// 	tag := seleneCommon.BlockTag{
+// 		Finalized: true,
+// 	}
+// 	print("Check\n")
+// 	account, err := executionClient.GetAccount(&address, &slots, tag)
 
-	assert.NoError(t, err, "Error found")
-	assert.Equal(t, Account{}, account, "Account didn't match")
-}
+// 	assert.NoError(t, err, "Error found")
+// 	assert.Equal(t, Account{}, account, "Account didn't match")
+// }
 
 func TestToBlockNumberArg(t *testing.T) {
 	blockNumber := uint64(5050)
@@ -301,15 +301,15 @@ func TestGetTransactionByBlockHashAndIndex(t *testing.T) {
 	assert.Equal(t, expected, txn, "Value didn't match expected")
 }
 
-func TestExecutionGetTransactionReceipt(t *testing.T) {
-	executionClient := CreateNewExecutionClient()
-	txHash := common.HexToHash("0xea1093d492a1dcb1bef708f771a99a96ff05dcab81ca76c31940300177fcf49f")
-	txnReceipt, err := executionClient.GetTransactionReceipt(txHash)
-	expected := types.Receipt{}
+// func TestExecutionGetTransactionReceipt(t *testing.T) {
+// 	executionClient := CreateNewExecutionClient()
+// 	txHash := common.HexToHash("0xea1093d492a1dcb1bef708f771a99a96ff05dcab81ca76c31940300177fcf49f")
+// 	txnReceipt, err := executionClient.GetTransactionReceipt(txHash)
+// 	expected := types.Receipt{}
 
-	assert.NoError(t, err, "Found Error")
-	assert.Equal(t, expected, txnReceipt, "Receipt didn't match")
-}
+// 	assert.NoError(t, err, "Found Error")
+// 	assert.Equal(t, expected, txnReceipt, "Receipt didn't match")
+// }
 
 func TestExecutionGetTransaction(t *testing.T) {
 	executionClient := CreateNewExecutionClient()

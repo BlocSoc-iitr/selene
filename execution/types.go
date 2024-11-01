@@ -11,11 +11,20 @@ import (
 	"reflect"
 )
 
+type B256 = common.Hash
 type FeeHistory struct {
 	BaseFeePerGas []hexutil.Big
 	GasUsedRatio  []float64
 	OldestBlock   *hexutil.Big
 	Reward        [][]hexutil.Big
+}
+type AccessListItem struct {
+	Address     common.Address `json:"address"`
+	StorageKeys []B256         `json:"storageKeys"`
+}
+type AccessList struct {
+	AccessList []AccessListItem `json:"accessList"`
+	GasUsed    hexutil.Bytes    `json:"gasUsed"`
 }
 
 // This is to help in unmarshaling values from rpc response

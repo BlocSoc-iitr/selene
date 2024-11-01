@@ -70,18 +70,18 @@ func (h *HttpRpc) GetProof(address *seleneCommon.Address, slots *[]common.Hash, 
 }
 
 // TODO: CreateAccessList is throwing an error
-// There is a problem in unmarshaling the response into types.AccessList
-func (h *HttpRpc) CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (types.AccessList, error) {
+// There is a problem in unmarshaling the response into AccessList
+func (h *HttpRpc) CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (AccessList, error) {
 	resultChan := make(chan struct {
-		accessList types.AccessList
+		accessList AccessList
 		err        error
 	})
 
 	go func() {
-		var accessList types.AccessList
+		var accessList AccessList
 		err := h.provider.Call(&accessList, "eth_createAccessList", opts, block.String())
 		resultChan <- struct {
-			accessList types.AccessList
+			accessList AccessList
 			err        error
 		}{accessList, err}
 		close(resultChan)
@@ -89,7 +89,7 @@ func (h *HttpRpc) CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (
 
 	result := <-resultChan
 	if result.err != nil {
-		return nil, result.err
+		return AccessList{}, result.err
 	}
 	return result.accessList, nil
 }

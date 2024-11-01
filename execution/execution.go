@@ -67,7 +67,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots *[]com
 	// block := e.state.GetBlock(tag)
 	// Error Handling
 	proof, err := e.Rpc.GetProof(address, slots, 21093292) // block.Number instead of hardcoded value
-	fmt.Printf("%v", proof)
+	// fmt.Printf("%v",proof);
 	if err != nil {
 		return Account{}, err
 	}
@@ -80,7 +80,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots *[]com
 	for i, hexByte := range proof.AccountProof {
 		accountProofBytes[i] = hexByte
 	}
-	fmt.Printf("%v", accountProofBytes)
+	// fmt.Printf("%v",accountProofBytes)
 	isValid, err := VerifyProof(accountProofBytes, common.Hex2Bytes("0xaba5664183bc9b0bbb9d092bc85cf895ab729b9d5ff98f4055e8869e8d948ad4"), accountPath, accountEncoded) //block.StateRoot[:] instead of hardcoded value
 	if err != nil {
 		return Account{}, err

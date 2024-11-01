@@ -12,7 +12,7 @@ import (
 type ExecutionRpc interface {
 	New(rpc *string) (ExecutionRpc, error)
 	GetProof(address *seleneCommon.Address, slots *[]common.Hash, block uint64) (EIP1186ProofResponse, error)
-	CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (types.AccessList, error)
+	CreateAccessList(opts CallOpts, block seleneCommon.BlockTag) (AccessList, error)
 	GetCode(address *seleneCommon.Address, block uint64) ([]byte, error)
 	SendRawTransaction(bytes *[]byte) (common.Hash, error)
 	GetTransactionReceipt(tx_hash *common.Hash) (types.Receipt, error)

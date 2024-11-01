@@ -13,7 +13,7 @@ func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, 
 	pathOffset := 0
 
 	for i, node := range proof {
-		fmt.Printf("node:%v ", node)
+		// fmt.Printf("node:%v ", node)
 		if !bytes.Equal(expectedHash, keccak256(node)) {
 			fmt.Printf("1st\n")
 			return false, nil
