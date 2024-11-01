@@ -13,13 +13,17 @@ func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, 
 	pathOffset := 0
 
 	for i, node := range proof {
+		fmt.Printf("node:%v ", node)
 		if !bytes.Equal(expectedHash, keccak256(node)) {
+			fmt.Printf("1st\n")
 			return false, nil
 		}
 
 		var nodeList [][]byte
 		if err := rlp.DecodeBytes(node, &nodeList); err != nil {
 			fmt.Println("Error decoding node:", err)
+			fmt.Printf("2nd\n")
+
 			return false, err
 		}
 
@@ -51,16 +55,20 @@ func VerifyProof(proof [][]byte, root []byte, path []byte, value []byte) (bool, 
 				prefixLength := sharedPrefixLength(path, pathOffset, nodePath)
 				if prefixLength < len(nodePath)*2-skipLength(nodePath) {
 					// Proof shows a divergent path , but we're not at the leaf yet
+					fmt.Printf("3rd\n")
+
 					return false, nil
 				}
 				pathOffset += prefixLength
 				expectedHash = nodeList[1]
 			}
 		} else {
+			fmt.Printf("4th\n")
+
 			return false, nil
 		}
 	}
-
+	fmt.Printf("5th\n")
 	return false, nil
 }
 
@@ -69,6 +77,8 @@ func pathsMatch(p1 []byte, s1 int, p2 []byte, s2 int) bool {
 	len2 := len(p2)*2 - s2
 
 	if len1 != len2 {
+		fmt.Printf("6th\n")
+
 		return false
 	}
 
@@ -76,6 +86,7 @@ func pathsMatch(p1 []byte, s1 int, p2 []byte, s2 int) bool {
 		n1 := getNibble(p1, s1+offset)
 		n2 := getNibble(p2, s2+offset)
 		if n1 != n2 {
+			fmt.Printf("7th\n")
 			return false
 		}
 	}
@@ -156,6 +167,7 @@ func keccak256(data []byte) []byte {
 	hash.Write(data)
 	return hash.Sum(nil)
 }
+
 // Updated as EIP1186ProofResponse was updated
 func EncodeAccount(proof *EIP1186ProofResponse) ([]byte, error) {
 	account := Account{

@@ -1,9 +1,9 @@
 package execution
 
 import (
-	"strconv"
 	"encoding/hex"
 	"math/big"
+	"strconv"
 
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/ethereum/go-ethereum"

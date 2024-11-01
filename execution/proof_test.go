@@ -220,16 +220,16 @@ func TestVerifyProof(t *testing.T) {
 	}
 	address := common.HexToAddress("0x457a22804cf255ee8c1b7628601c5682b3d70c71")
 	proof := [][]byte{}
-	
+
 	for _, s := range accountProof {
 		bytes1, _ := hex.DecodeString(s[2:])
 		proof = append(proof, bytes1)
 	}
-	
+
 	stateRoot := "b666170175a47b5dde7514e732d935e58f7b379b0cf2774051c3fad5e9224000"
 	root, err := hex.DecodeString(stateRoot)
 	accountPath := crypto.Keccak256(address.Bytes())
-	
+
 	assert.NoError(t, err, "Expected no error")
 	assert.Equal(t, root, keccak256(proof[0]), "Not Equal")
 	var testData Proof

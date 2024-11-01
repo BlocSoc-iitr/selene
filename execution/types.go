@@ -41,6 +41,7 @@ type Account struct {
 	StorageHash common.Hash
 	Slots       []Slot
 }
+
 // This is to help in unmarshaling values from rpc response
 type Slot struct {
 	Key   common.Hash // The key (slot)
