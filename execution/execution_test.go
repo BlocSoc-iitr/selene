@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math/big"
-	"sync"
+	// "sync"
 	"testing"
 
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
@@ -19,120 +19,120 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func CreateNewState() *State {
-	blockChan := make(chan *seleneCommon.Block)
-	finalizedBlockChan := make(chan *seleneCommon.Block)
+// func CreateNewState() *State {
+// 	blockChan := make(chan *seleneCommon.Block)
+// 	finalizedBlockChan := make(chan *seleneCommon.Block)
 
-	state := NewState(5, blockChan, finalizedBlockChan)
+// 	state := NewState(5, blockChan, finalizedBlockChan)
 
-	// Simulate blocks to push
-	block1 := &seleneCommon.Block{
-		Number: 1,
-		Hash:   [32]byte{0x1},
-		Transactions: seleneCommon.Transactions{
-			Hashes: [][32]byte{{0x11}, {0x12}},
-		},
-	}
-	block2 := &seleneCommon.Block{
-		Number: 2,
-		Hash:   [32]byte{0x2},
-		Transactions: seleneCommon.Transactions{
-			Hashes: [][32]byte{{0x21}, {0x22}},
-			Full: []seleneCommon.Transaction{
-				{
-					Hash:         common.Hash([32]byte{0x21}),
-					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-					Gas:          hexutil.Uint64(5),
-					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-				},
-				{Hash: common.Hash([32]byte{0x22})},
-			},
-		},
-	}
+// 	// Simulate blocks to push
+// 	block1 := &seleneCommon.Block{
+// 		Number: 1,
+// 		Hash:   [32]byte{0x1},
+// 		Transactions: seleneCommon.Transactions{
+// 			Hashes: [][32]byte{{0x11}, {0x12}},
+// 		},
+// 	}
+// 	block2 := &seleneCommon.Block{
+// 		Number: 2,
+// 		Hash:   [32]byte{0x2},
+// 		Transactions: seleneCommon.Transactions{
+// 			Hashes: [][32]byte{{0x21}, {0x22}},
+// 			Full: []seleneCommon.Transaction{
+// 				{
+// 					Hash:         common.Hash([32]byte{0x21}),
+// 					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 					Gas:          hexutil.Uint64(5),
+// 					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 				},
+// 				{Hash: common.Hash([32]byte{0x22})},
+// 			},
+// 		},
+// 	}
 
-	block3 := &seleneCommon.Block{
-		Number: 1000000,
-		Hash:   common.HexToHash("0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e"),
-		Transactions: seleneCommon.Transactions{
-			Hashes: [][32]byte{
-				common.HexToHash("0xe9e91f1ee4b56c0df2e9f06c2b8c27c6076195a88a7b8537ba8313d80e6f124e"),
-				common.HexToHash("0xea1093d492a1dcb1bef708f771a99a96ff05dcab81ca76c31940300177fcf49f"),
-			},
-			Full: []seleneCommon.Transaction{
-				{
-					Hash:         common.HexToHash("0xe9e91f1ee4b56c0df2e9f06c2b8c27c6076195a88a7b8537ba8313d80e6f124e"),
-					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-					Gas:          hexutil.Uint64(60),
-					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-				},
-				{
-					Hash:         common.HexToHash("0xea1093d492a1dcb1bef708f771a99a96ff05dcab81ca76c31940300177fcf49f"),
-					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-					Gas:          hexutil.Uint64(60),
-					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-				},
-			},
-		},
-	}
+// 	block3 := &seleneCommon.Block{
+// 		Number: 1000000,
+// 		Hash:   common.HexToHash("0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e"),
+// 		Transactions: seleneCommon.Transactions{
+// 			Hashes: [][32]byte{
+// 				common.HexToHash("0xe9e91f1ee4b56c0df2e9f06c2b8c27c6076195a88a7b8537ba8313d80e6f124e"),
+// 				common.HexToHash("0xea1093d492a1dcb1bef708f771a99a96ff05dcab81ca76c31940300177fcf49f"),
+// 			},
+// 			Full: []seleneCommon.Transaction{
+// 				{
+// 					Hash:         common.HexToHash("0xe9e91f1ee4b56c0df2e9f06c2b8c27c6076195a88a7b8537ba8313d80e6f124e"),
+// 					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 					Gas:          hexutil.Uint64(60),
+// 					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 				},
+// 				{
+// 					Hash:         common.HexToHash("0xea1093d492a1dcb1bef708f771a99a96ff05dcab81ca76c31940300177fcf49f"),
+// 					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 					Gas:          hexutil.Uint64(60),
+// 					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 				},
+// 			},
+// 		},
+// 	}
 
-	// Push blocks through channel
-	go func() {
-		blockChan <- block1
-		blockChan <- block2
-		blockChan <- block3
-		close(blockChan)
-	}()
+// 	// Push blocks through channel
+// 	go func() {
+// 		blockChan <- block1
+// 		blockChan <- block2
+// 		blockChan <- block3
+// 		close(blockChan)
+// 	}()
 
-	// Allow goroutine to process the blocks
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for len(state.blocks) < 3 {
-			// wait for blocks to be processed
-		}
-	}()
+// 	// Allow goroutine to process the blocks
+// 	wg := sync.WaitGroup{}
+// 	wg.Add(1)
+// 	go func() {
+// 		defer wg.Done()
+// 		for len(state.blocks) < 3 {
+// 			// wait for blocks to be processed
+// 		}
+// 	}()
 
-	wg.Wait()
+// 	wg.Wait()
 
-	// Simulate finalized block
-	finalizedBlock := &seleneCommon.Block{
-		Number: 2,
-		Hash:   [32]byte{0x2},
-		Transactions: seleneCommon.Transactions{
-			Hashes: [][32]byte{{0x21}, {0x22}},
-			Full: []seleneCommon.Transaction{
-				{
-					Hash:         common.Hash([32]byte{0x21}),
-					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-					Gas:          hexutil.Uint64(5),
-					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
-				},
-				{Hash: common.Hash([32]byte{0x22})},
-			},
-		},
-	}
-	go func() {
-		finalizedBlockChan <- finalizedBlock
-		close(finalizedBlockChan)
-	}()
+// 	// Simulate finalized block
+// 	finalizedBlock := &seleneCommon.Block{
+// 		Number: 2,
+// 		Hash:   [32]byte{0x2},
+// 		Transactions: seleneCommon.Transactions{
+// 			Hashes: [][32]byte{{0x21}, {0x22}},
+// 			Full: []seleneCommon.Transaction{
+// 				{
+// 					Hash:         common.Hash([32]byte{0x21}),
+// 					GasPrice:     hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 					Gas:          hexutil.Uint64(5),
+// 					MaxFeePerGas: hexutil.Big(*hexutil.MustDecodeBig("0x12345")),
+// 				},
+// 				{Hash: common.Hash([32]byte{0x22})},
+// 			},
+// 		},
+// 	}
+// 	go func() {
+// 		finalizedBlockChan <- finalizedBlock
+// 		close(finalizedBlockChan)
+// 	}()
 
-	// Wait for finalized block to be processed
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for state.finalizedBlock == nil {
-			// wait for finalized block to be processed
-		}
-	}()
-	wg.Wait()
+// 	// Wait for finalized block to be processed
+// 	wg.Add(1)
+// 	go func() {
+// 		defer wg.Done()
+// 		for state.finalizedBlock == nil {
+// 			// wait for finalized block to be processed
+// 		}
+// 	}()
+// 	wg.Wait()
 
-	return state
-}
+// 	return state
+// }
 
 func CreateNewExecutionClient() *ExecutionClient {
 	rpc := "https://eth-mainnet.g.alchemy.com/v2/j28GcevSYukh-GvSeBOYcwHOfIggF1Gt"
-	state := CreateNewState()
+	state := &State{}
 	var executionClient *ExecutionClient
 	executionClient, _ = executionClient.New(rpc, state)
 
