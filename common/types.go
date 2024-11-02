@@ -117,7 +117,7 @@ func (b BlockTag) String() string {
 	if b.Finalized {
 		return "finalized"
 	}
-	return fmt.Sprintf("%d", b.Number)
+	return fmt.Sprintf("0x%x", b.Number)
 }
 
 func (b *BlockTag) UnmarshalJSON(data []byte) error {
