@@ -64,9 +64,9 @@ func (e *ExecutionClient) CheckRpc(chainID uint64) error {
 
 // GetAccount retrieves the account information
 func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots *[]common.Hash, tag seleneCommon.BlockTag) (Account, error) { //Account from execution/types.go
-	// block := e.state.GetBlock(tag)
+	block := e.state.GetBlock(tag)
 	// Error Handling
-	proof, err := e.Rpc.GetProof(address, slots, 21093292) // block.Number instead of hardcoded value
+	proof, err := e.Rpc.GetProof(address, slots, block.Number) 
 	// fmt.Printf("%v",proof);
 	if err != nil {
 		return Account{}, err
@@ -81,7 +81,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots *[]com
 		accountProofBytes[i] = hexByte
 	}
 	// fmt.Printf("%v",accountProofBytes)
-	isValid, err := VerifyProof(accountProofBytes, common.Hex2Bytes("0xaba5664183bc9b0bbb9d092bc85cf895ab729b9d5ff98f4055e8869e8d948ad4"), accountPath, accountEncoded) //block.StateRoot[:] instead of hardcoded value
+	isValid, err := VerifyProof(accountProofBytes, block.StateRoot[:], accountPath, accountEncoded) 
 	if err != nil {
 		return Account{}, err
 	}
@@ -125,7 +125,7 @@ func (e *ExecutionClient) GetAccount(address *seleneCommon.Address, slots *[]com
 	if proof.CodeHash == [32]byte{} {
 		code = []byte{}
 	} else {
-		code, err := e.Rpc.GetCode(address, 21093292) // block.Number instead of hardcoded value
+		code, err := e.Rpc.GetCode(address, block.Number) 
 		if err != nil {
 			return Account{}, err
 		}
