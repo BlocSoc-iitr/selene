@@ -179,7 +179,7 @@ func TestToBlockNumberArg(t *testing.T) {
 	assert.Equal(t, "latest", toBlockNumArg(blockNumber), "Block Number didn't match")
 }
 
-//* Not possible to test as we would have to send actual txn on mainnet
+//* Not possible to test as we would have to send actual txn onMainnet
 // func TestSendRawTransaction(t *testing.T) {
 // 	executionClient := CreateNewExecutionClient()
 // 	transaction := common.Hex2Bytes("02f8720113840a436fe4850749a01900825208942ce3384fcaea81a0f10b2599ffb2f0603e6169f1878e1bc9bf04000080c080a097f6540a48025bd28dd3c43f33aa0269a29b40d852396fab1ab7c2f95a3930e7a03f69a6bca9ef4be6ce60735e76133670617286e15e18af96b7e5e0afcdc240c6")
