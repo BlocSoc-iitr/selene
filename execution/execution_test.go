@@ -6,9 +6,7 @@ import (
 	"math/big"
 	"sync"
 	"testing"
-
 	seleneCommon "github.com/BlocSoc-iitr/selene/common"
-	// "github.com/BlocSoc-iitr/selene/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -122,7 +120,7 @@ func CreateNewState() *State {
 	go func() {
 		defer wg.Done()
 		for state.finalizedBlock == nil {
-			_=0;
+			// _=0;
 			// wait for finalized block to be processed
 		}
 	}()
@@ -315,7 +313,6 @@ func TestGetTransactionByBlockHashAndIndex(t *testing.T) {
 func TestExecutionGetTransaction(t *testing.T) {
 	executionClient := CreateNewExecutionClient()
 	txHash := common.Hash([32]byte{0x21})
-
 	txn, err := executionClient.GetTransaction(txHash)
 	expected := seleneCommon.Transaction{
 		Hash:         common.Hash([32]byte{0x21}),

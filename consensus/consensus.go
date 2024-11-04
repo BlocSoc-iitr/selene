@@ -958,11 +958,7 @@ func processTransaction(txBytes *[1073741824]byte, blockHash consensus_core.Byte
 	tx := common.Transaction{
 		Hash:             txEnvelope.Hash(),
 		Nonce:            hexutil.Uint64(txEnvelope.Nonce()),
-		BlockHash:        func() string {
-			data := [32]byte(blockHash)
-			hexString := hex.EncodeToString(data[:])
-			return hexString
-		}(),
+		BlockHash:        geth.BytesToHash(blockHash[:]),
 		BlockNumber:      hexutil.Uint64(*blockNumber),
 		TransactionIndex: hexutil.Uint64(index),
 		To:               txEnvelope.To(),
@@ -980,7 +976,7 @@ func processTransaction(txBytes *[1073741824]byte, blockHash consensus_core.Byte
 	if err != nil {
 		return common.Transaction{}, fmt.Errorf("failed to recover sender: %v", err)
 	}
-	tx.From = from.Hex()
+	tx.From = &from
 
 	// Extract signature components
 	r, s, v := txEnvelope.RawSignatureValues()

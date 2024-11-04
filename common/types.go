@@ -51,10 +51,10 @@ type Transaction struct {
 	AccessList           types.AccessList `json:"accessList"`
 	Hash                 common.Hash      `json:"hash"`
 	Nonce                hexutil.Uint64   `json:"nonce"`
-	BlockHash            string           `json:"blockHash"`   // Pointer because it's nullable
+	BlockHash            common.Hash           `json:"blockHash"`   // Pointer because it's nullable
 	BlockNumber          hexutil.Uint64   `json:"blockNumber"` // Pointer because it's nullable
 	TransactionIndex     hexutil.Uint64   `json:"transactionIndex"`
-	From                 string           `json:"from"`
+	From                 *common.Address           `json:"from"`
 	To                   *common.Address  `json:"to"` // Pointer because 'to' can be null for contract creation
 	Value                hexutil.Big      `json:"value"`
 	GasPrice             hexutil.Big      `json:"gasPrice"`
