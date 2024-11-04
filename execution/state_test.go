@@ -72,6 +72,7 @@ func TestNewState(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for state.finalizedBlock == nil {
+			_=0
 			// wait for finalized block to be processed
 		}
 	}()
