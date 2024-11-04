@@ -36,7 +36,7 @@ func GetClient(strictCheckpointAge bool, sync bool) (*Inner, error) {
 		log.Fatalf("failed to decode checkpoint: %v", err)
 	}
 
-	blockSend := make(chan common.Block, 256)
+	blockSend := make(chan *common.Block, 256)
 	finalizedBlockSend := make(chan *common.Block)
 	channelSend := make(chan *[]byte)
 
