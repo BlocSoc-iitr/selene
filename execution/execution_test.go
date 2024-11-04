@@ -121,9 +121,10 @@ func CreateNewState() *State {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		// for state.finalizedBlock == nil {
-		// 	// wait for finalized block to be processed
-		// }
+		for state.finalizedBlock == nil {
+			_=0;
+			// wait for finalized block to be processed
+		}
 	}()
 	wg.Wait()
 
