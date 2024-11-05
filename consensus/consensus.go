@@ -310,7 +310,7 @@ func (in *Inner) get_execution_payload(slot *uint64) (*consensus_core.ExecutionP
 	}
 
 	block := <-blockChan
-	Gethblock, err := beacon.BlockFromJSON("capella", block.Hash)
+	Gethblock, err := beacon.BlockFromJSON("deneb", block.Hash)
 	if err != nil {
 		return nil, err
 	}
