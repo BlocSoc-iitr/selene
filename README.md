@@ -49,6 +49,32 @@ The Consensus Layer is responsible for maintaining agreement on the state of the
    * This function verifies a BLS aggregate signature. It accepts the aggregated signature (blsaggsig) and an array of public keys (blspubkey[]), returning a boolean value that indicates whether the signature is 
      valid.
 
+# Project Roadmap
+
+## August 2024
+- **Milestone**: Finalize Project Architecture  
+  - Completion and documentation of overall project structure and design.
+
+## September 2024
+- **Milestone**: Finalize Core Modules  
+  - Common, Configuration, and Consensus modules development completed.
+  - Initial integration tests conducted on these core components.
+
+## October 2024
+- **Milestone**: Execution Module Review & Consensus Testing  
+  - Execution module undergoes thorough review for compliance and optimization.
+  - Consensus module unit testing completed to ensure stability and correctness.
+
+## November 2024
+- **Milestone**: Refactoring and Finalization of Key Modules  
+  - Refactoring of the Consensus module to improve modularity and performance.
+  - Execution and Client modules finalized, with documentation prepared for each.
+
+## Upcoming Milestones
+- **Execution Module Refinement**: Refactor the Execution module and complete its unit tests.
+- **CLI and Build Module Completion**: Finalize and test Command-Line Interface (CLI) and build modules for deployment readiness.
+
+
 # Installing
 Yet to come.
 
@@ -67,7 +93,7 @@ Selene is still experimental software. We hope to ship v0.1 by November 2024.
 [Veer Chaurasia](https://github.com/VeerChaurasia)<br>
 [Nilav Prajapati](https://github.com/gerceboss)<br>
 [Utsav Sharma](https://github.com/x-senpai-x)<br>
-[Shourya Choudhary](https://github.com/18aaddy)<br>
+[Shourya Chaudhry](https://github.com/18aaddy)<br>
 [Abdullah Azeem](https://github.com/ABD-AZE)<br>
 
 
