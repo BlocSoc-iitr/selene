@@ -81,18 +81,18 @@ func (m *MockRpc) GetOptimisticUpdate() (consensus_core.OptimisticUpdate, error)
 	}
 	return optimistic.Data, nil
 }
-func (m *MockRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock, error) {
+func (m *MockRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock,string, error) {
 	path := filepath.Join(m.testdata, fmt.Sprintf("blocks/%d.json", slot))
 	res, err := os.ReadFile(path)
 	if err != nil {
-		return consensus_core.BeaconBlock{}, fmt.Errorf("failed to read file: %w", err)
+		return consensus_core.BeaconBlock{},"", fmt.Errorf("failed to read file: %w", err)
 	}
 	var block BeaconBlockResponse
 	err = json.Unmarshal(res, &block)
 	if err != nil {
-		return consensus_core.BeaconBlock{}, err
+		return consensus_core.BeaconBlock{},"", err
 	}
-	return block.Data.Message, nil
+	return block.Data.Message,block.Version, nil
 }
 func (m *MockRpc) ChainId() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")

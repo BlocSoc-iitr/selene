@@ -96,14 +96,14 @@ func (n *NimbusRpc) GetOptimisticUpdate() (consensus_core.OptimisticUpdate, erro
 	}
 	return res.Data, nil
 }
-func (n *NimbusRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock, error) {
+func (n *NimbusRpc) GetBlock(slot uint64) (consensus_core.BeaconBlock,string, error) {
 	req := fmt.Sprintf("%s/eth/v2/beacon/blocks/%s", n.rpc, strconv.FormatUint(slot, 10))
 	var res BeaconBlockResponse
 	err := get(req, &res)
 	if err != nil {
-		return consensus_core.BeaconBlock{}, fmt.Errorf("block error: %w", err)
+		return consensus_core.BeaconBlock{},"", fmt.Errorf("block error: %w", err)
 	}
-	return res.Data.Message, nil
+	return res.Data.Message,res.Version, nil
 }
 func (n *NimbusRpc) ChainId() (uint64, error) {
 	req := fmt.Sprintf("%s/eth/v1/config/spec", n.rpc)
@@ -118,6 +118,7 @@ func (n *NimbusRpc) ChainId() (uint64, error) {
 // BeaconBlock, Update,FinalityUpdate ,OptimisticUpdate,Bootstrap yet to be defined in consensus-core/src/types/mod.go
 // For now defined in consensus/consensus_core.go
 type BeaconBlockResponse struct {
+	Version string
 	Data BeaconBlockData
 }
 type BeaconBlockData struct {
