@@ -98,7 +98,7 @@ func IsProofValid(
 	for _, node := range branch {
 		branchInMerkle = append(branchInMerkle, merkle.Value(node))
 	}
-	fmt.Print(attestedHeader.StateRoot)
+	
 	err := merkle.VerifyProof(common.Hash(attestedHeader.StateRoot), uint64(index), branchInMerkle, merkle.Value(leafObject))
 	if err != nil {
 		log.Println("Error in verifying Merkle proof:", err)
