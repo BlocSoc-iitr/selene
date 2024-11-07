@@ -502,7 +502,10 @@ func (in *Inner) sync(checkpoint [32]byte) error {
 		}
 		in.apply_optimistic_update(&optimisticUpdate)
 		errorChan <- nil
-		log.Printf("consensus client in sync with checkpoint: 0x%s", hex.EncodeToString(checkpoint[:]))
+			log.Printf(
+			"\033[1;36mconsensus client in sync with checkpoint: 0x%s\033[0m",
+			hex.EncodeToString(checkpoint[:]),
+		)
 	}()
 
 	if err := <-errorChan; err != nil {
@@ -835,6 +838,7 @@ func (in *Inner) apply_finality_update(update *consensus_core.FinalityUpdate) {
 	if checkpoint != nil {
 		in.lastCheckpoint = checkpoint
 	}
+	in.Log_finality_update(update)
 }
 func (in *Inner) apply_optimistic_update(update *consensus_core.OptimisticUpdate) {
 	genUpdate := GenericUpdate{
@@ -846,6 +850,7 @@ func (in *Inner) apply_optimistic_update(update *consensus_core.OptimisticUpdate
 	if checkpoint != nil {
 		in.lastCheckpoint = checkpoint
 	}
+	in.Log_optimistic_update(update)
 }
 func (in *Inner) Log_finality_update(update *consensus_core.FinalityUpdate) {
 	participation := float32(getBits(update.SyncAggregate.SyncCommitteeBits[:])) / 512.0 * 100.0
@@ -861,7 +866,7 @@ func (in *Inner) Log_finality_update(update *consensus_core.FinalityUpdate) {
 	seconds := int(age.Seconds()) % 60
 
 	log.Printf(
-		"finalized slot             slot=%d  confidence=%.*f%%  age=%02d:%02d:%02d:%02d",
+		"\033[1;32mfinalized slot\033[0m             slot=%d  confidence=%.*f%%  age=%02d:%02d:%02d:%02d",
 		in.Store.FinalizedHeader.Slot, decimals, participation, int(days), hours, minutes, seconds,
 	)
 }
@@ -879,7 +884,7 @@ func (in *Inner) Log_optimistic_update(update *consensus_core.OptimisticUpdate) 
 	seconds := int(age.Seconds()) % 60
 
 	log.Printf(
-		"updated head               slot=%d  confidence=%.*f%%  age=%02d:%02d:%02d:%02d",
+		"\033[1;33mupdated head\033[0m               slot=%d  confidence=%.*f%%  age=%02d:%02d:%02d:%02d",
 		in.Store.OptimisticHeader.Slot, decimals, participation, int(days), hours, minutes, seconds,
 	)
 }
