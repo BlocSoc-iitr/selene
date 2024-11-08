@@ -3,11 +3,11 @@
 
 # Introduction
 
-Selene is a fast, open source, portable & secure light client for Ethereum written in Golang. We plan to ship Selene as the underlying software behind wallets that use light clients. We derived our inspiration from [Helios](https://github.com/a16z/helios) which is a light client written in Rust. The project is in active maintenance on the [dev](https://github.com/BlocSoc-iitr/selene/tree/dev) branch. 
+Selene is a fast, open source, portable & secure light client for Ethereum written in Golang. We plan to ship Selene as the underlying software behind wallets that use light clients. We derived our inspiration from [Helios](https://github.com/a16z/helios) which is a light client written in Rust. The project is in active maintenance on the [dev](https://github.com/BlocSoc-iitr/selene/tree/dev) branch.
 
 # Architecture
 ## High Level Overview
-The image attached below is a simple demonstration of what Selene is and how it works at a high level: 
+The image attached below is a simple demonstration of what Selene is and how it works at a high level:
 
 ![High Level Overview](https://github.com/user-attachments/assets/948541ef-5407-4035-a49d-e0d23711aadc)
 ## Architecture
@@ -19,7 +19,7 @@ Below is the complete architecture of how a light client like Selene works under
 1. The Consensus Layer provides sync information and verified block headers to the RPC Server.
 2. The RPC Server passes block information and verified headers to the Execution Layer.
 3. The Execution Layer validates Merkle proofs based on the state root and requested data.
-   
+
 ## Centralised RPC Server 
 This server acts as an intermediary between the Consensus and Execution layers. It handles:
 
@@ -46,8 +46,34 @@ The Consensus Layer is responsible for maintaining agreement on the state of the
    * Syncs for each sync committee period (~27 hours) up to the latest block
 * A **verify bls sig** function that:
    * Takes `blsaggsig` and `blspubkey[]` as input
-   * This function verifies a BLS aggregate signature. It accepts the aggregated signature (blsaggsig) and an array of public keys (blspubkey[]), returning a boolean value that indicates whether the signature is 
+   * This function verifies a BLS aggregate signature. It accepts the aggregated signature (blsaggsig) and an array of public keys (blspubkey[]), returning a boolean value that indicates whether the signature is
      valid.
+
+# Project Roadmap
+
+## August 2024
+- **Milestone**: Finalize Project Architecture
+  - Completion and documentation of overall project structure and design.
+
+## September 2024
+- **Milestone**: Finalize Core Modules
+  - Common, Configuration, and Consensus modules development completed.
+  - Initial integration tests conducted on these core components.
+
+## October 2024
+- **Milestone**: Execution Module Review & Consensus Testing
+  - Execution module undergoes thorough review for compliance and optimization.
+  - Consensus module unit testing completed to ensure stability and correctness.
+
+## November 2024
+- **Milestone**: Refactoring and Finalization of Key Modules
+  - Refactoring of the Consensus module to improve modularity and performance.
+  - Execution and Client modules finalized, with documentation prepared for each.
+
+## Upcoming Milestones
+- **Execution Module Refinement**: Refactor the Execution module and complete its unit tests.
+- **CLI and Build Module Completion**: Finalize and test Command-Line Interface (CLI) and build modules for deployment readiness.
+
 
 # Installing
 Yet to come.
@@ -67,7 +93,7 @@ Selene is still experimental software. We hope to ship v0.1 by November 2024.
 [Veer Chaurasia](https://github.com/VeerChaurasia)<br>
 [Nilav Prajapati](https://github.com/gerceboss)<br>
 [Utsav Sharma](https://github.com/x-senpai-x)<br>
-[Shourya Choudhary](https://github.com/18aaddy)<br>
+[Shourya Chaudhry](https://github.com/18aaddy)<br>
 [Abdullah Azeem](https://github.com/ABD-AZE)<br>
 
 
