@@ -2,7 +2,8 @@ package utils
 
 import (
 	"encoding/hex"
-	"strconv"
+	"strconv"        
+	"net/url"
 	"strings"
 
 	"crypto/sha256"
@@ -290,4 +291,8 @@ func coreVerify(pk *bls.Pubkey, message []byte, signature *bls.Signature) bool {
 	eng.AddPairInv(P, R)
 	// 9. If C1 != C2, return INVALID
 	return !eng.Check()
+}
+func IsURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }

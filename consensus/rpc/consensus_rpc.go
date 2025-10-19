@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"github.com/BlocSoc-iitr/selene/consensus/consensus_core"
-
 )
 
 // return types not mention and oarameters as well
@@ -14,6 +13,7 @@ type ConsensusRpc interface {
 	GetBlock(slot uint64) (consensus_core.BeaconBlock,string, error)
 	ChainId() (uint64, error)
 }
+
 
 
 func NewConsensusRpc(rpc string) ConsensusRpc {

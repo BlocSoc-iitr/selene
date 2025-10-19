@@ -3,7 +3,6 @@ package execution
 import (
 	"encoding/json"
 	"fmt"
-	seleneCommon "github.com/BlocSoc-iitr/selene/common"
 	"github.com/BlocSoc-iitr/selene/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -12,27 +11,36 @@ import (
 	"reflect"
 )
 
+type B256 = common.Hash
 type FeeHistory struct {
 	BaseFeePerGas []hexutil.Big
 	GasUsedRatio  []float64
 	OldestBlock   *hexutil.Big
 	Reward        [][]hexutil.Big
 }
+type AccessListItem struct {
+	Address     common.Address `json:"address"`
+	StorageKeys []B256         `json:"storageKeys"`
+}
+type AccessList struct {
+	AccessList []AccessListItem `json:"accessList"`
+	GasUsed    hexutil.Bytes    `json:"gasUsed"`
+}
 
-// defined storage proof	and EIP1186ProofResponse structs
+// This is to help in unmarshaling values from rpc response
 type StorageProof struct {
-	Key   common.Hash
-	Proof []hexutil.Bytes
-	Value *uint256.Int
+	Key   common.Hash     `json:"key"`
+	Proof []hexutil.Bytes `json:"proof"`
+	Value *uint256.Int    `json:"value"`
 }
 type EIP1186ProofResponse struct {
-	Address      seleneCommon.Address
-	Balance      *uint256.Int
-	CodeHash     common.Hash
-	Nonce        uint64
-	StorageHash  common.Hash
-	AccountProof []hexutil.Bytes
-	StorageProof []StorageProof
+	Address      common.Address  `json:"address"`
+	Balance      *uint256.Int    `json:"balance"`
+	CodeHash     common.Hash     `json:"codeHash"`
+	Nonce        hexutil.Uint64  `json:"nonce"`
+	StorageHash  common.Hash     `json:"storageHash"`
+	AccountProof []hexutil.Bytes `json:"accountProof"`
+	StorageProof []StorageProof  `json:"storageProof"`
 }
 type Account struct {
 	Balance     *big.Int
@@ -40,7 +48,13 @@ type Account struct {
 	CodeHash    common.Hash
 	Code        []byte
 	StorageHash common.Hash
-	Slots       map[common.Hash]*big.Int
+	Slots       []Slot
+}
+
+// This is to help in unmarshaling values from rpc response
+type Slot struct {
+	Key   common.Hash // The key (slot)
+	Value *big.Int    // The value (storage value)
 }
 type CallOpts struct {
 	From     *common.Address `json:"from,omitempty"`
