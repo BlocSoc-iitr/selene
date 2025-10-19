@@ -152,7 +152,7 @@ func TestNimbusGetBlock(t *testing.T) {
 	}))
 	defer server.Close()
 	nimbusRpc := NewNimbusRpc(server.URL)
-	block, err := nimbusRpc.GetBlock(4000)
+	block,_, err := nimbusRpc.GetBlock(4000)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(4000), block.Slot)
 }

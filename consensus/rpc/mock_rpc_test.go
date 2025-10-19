@@ -205,7 +205,7 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	mockRpc := NewMockRpc(tempDir)
-	block, err := mockRpc.GetBlock(4000)
+	block,_, err := mockRpc.GetBlock(4000)
 	if err != nil {
 		t.Fatalf("GetBlock failed: %v", err)
 	}

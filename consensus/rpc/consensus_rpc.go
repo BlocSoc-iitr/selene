@@ -11,7 +11,7 @@ type ConsensusRpc interface {
 	GetUpdates(period uint64, count uint8) ([]consensus_core.Update, error)
 	GetFinalityUpdate() (consensus_core.FinalityUpdate, error)
 	GetOptimisticUpdate() (consensus_core.OptimisticUpdate, error)
-	GetBlock(slot uint64) (consensus_core.BeaconBlock, error)
+	GetBlock(slot uint64) (consensus_core.BeaconBlock,string, error)
 	ChainId() (uint64, error)
 }
 

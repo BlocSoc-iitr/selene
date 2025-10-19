@@ -295,14 +295,16 @@ func (in *Inner) Check_rpc() error {
 func (in *Inner) get_execution_payload(slot *uint64) (*consensus_core.ExecutionPayload, error) {
 	errorChan := make(chan error, 1)
 	blockChan := make(chan consensus_core.BeaconBlock, 1)
+	versionChan := make(chan string , 1)
 	go func() {
 		var err error
-		block, err := in.RPC.GetBlock(*slot)
+		block,version, err := in.RPC.GetBlock(*slot)
 		if err != nil {
 			errorChan <- err
 		}
 		errorChan <- nil
 		blockChan <- block
+		versionChan <- version
 	}()
 
 	if err := <-errorChan; err != nil {
@@ -310,7 +312,8 @@ func (in *Inner) get_execution_payload(slot *uint64) (*consensus_core.ExecutionP
 	}
 
 	block := <-blockChan
-	Gethblock, err := beacon.BlockFromJSON("capella", block.Hash)
+	version := <-versionChan
+	Gethblock, err := beacon.BlockFromJSON(version, block.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +343,7 @@ func (in *Inner) Get_payloads(startSlot, endSlot uint64) ([]interface{}, error) 
 	var payloads []interface{}
 
 	// Fetch the block at endSlot to get the initial parent hash
-	endBlock, err := in.RPC.GetBlock(endSlot)
+	endBlock,_, err := in.RPC.GetBlock(endSlot)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +360,7 @@ func (in *Inner) Get_payloads(startSlot, endSlot uint64) ([]interface{}, error) 
 		wg.Add(1)
 		go func(slot uint64) {
 			defer wg.Done()
-			block, err := in.RPC.GetBlock(slot)
+			block,_, err := in.RPC.GetBlock(slot)
 			if err != nil {
 				errorChan <- err
 				return
