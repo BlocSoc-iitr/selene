@@ -1,6 +1,8 @@
 ![tests](https://github.com/BlocSoc-iitr/selene/actions/workflows/test.yml/badge.svg)
 ![linter](https://github.com/BlocSoc-iitr/selene/actions/workflows/cilint.yml/badge.svg)
 
+# NOTE
+We have unfortunately stopped further development on the project due to the technical limitations of running a light client in a browser at present. We do wish to resume our work of building this some time in future.
 # Introduction
 
 Selene is a fast, open source, portable & secure light client for Ethereum written in Golang. We plan to ship Selene as the underlying software behind wallets that use light clients. We derived our inspiration from [Helios](https://github.com/a16z/helios) which is a light client written in Rust. The project is in active maintenance on the [dev](https://github.com/BlocSoc-iitr/selene/tree/dev) branch.
