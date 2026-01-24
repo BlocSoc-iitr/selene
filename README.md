@@ -88,7 +88,7 @@ In progress.
 Selene is still experimental software. We hope to ship v0.1 by November 2024.
 
 # Current Team behind Selene
-[Vasu Khanna](https://github.com/star-gazer111) ( Chief Innovator ) <br>
+[Vasu Khanna](https://github.com/star-gazer111)  <br>
 [Sambhav Jain](https://github.com/DarkLord017) <br>
 [Veer Chaurasia](https://github.com/VeerChaurasia)<br>
 [Nilav Prajapati](https://github.com/gerceboss)<br>
